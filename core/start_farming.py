@@ -222,10 +222,11 @@ class Farming:
                     json=json_data,
                     verify_ssl=False)
 
-                if r.status not in [201, 200]:
+                if r.status not in [201, 200] or r.content_type != 'application/json':
                     logger.warning(f"{self.session_name} | Доступ к API запрещен: {r.status}")
                     logger.info(f"{self.session_name} | Сплю 60 сек")
                     await asyncio.sleep(delay=60)
+                    continue
 
                 if (await r.json(content_type=None)).get('data') \
                         and isinstance((await r.json(content_type=None))['data'], dict) \
