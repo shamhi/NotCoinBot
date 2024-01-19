@@ -222,6 +222,11 @@ class Farming:
                     json=json_data,
                     verify_ssl=False)
 
+                if r.status not in [201, 200]:
+                    logger.warning(f"{self.session_name} | Доступ к API запрещен: {r.status}")
+                    logger.info(f"{self.session_name} | Сплю 60 сек")
+                    await asyncio.sleep(delay=60)
+
                 if (await r.json(content_type=None)).get('data') \
                         and isinstance((await r.json(content_type=None))['data'], dict) \
                         and (await r.json(content_type=None))['data'].get('message', '') == 'Turbo mode is expired':
@@ -450,16 +455,15 @@ class Farming:
 
                             try:
                                 new_balance, click_hash, have_turbo = await self.send_clicks(client=client,
-                                                                                             clicks_count=int(
-                                                                                                 clicks_count),
+                                                                                             clicks_count=
+                                                                                             int(clicks_count),
                                                                                              tg_web_data=tg_web_data,
                                                                                              balance=
-                                                                                             int(profile_data['data'][
-                                                                                                     0][
-                                                                                                     'balanceCoins']),
+                                                                                             int(profile_data['data'][0]
+                                                                                                 ['balanceCoins']),
                                                                                              total_coins=
-                                                                                             profile_data['data'][0][
-                                                                                                 'totalCoins'],
+                                                                                             profile_data['data'][0]
+                                                                                             ['totalCoins'],
                                                                                              click_hash=click_hash,
                                                                                              turbo=active_turbo)
 
