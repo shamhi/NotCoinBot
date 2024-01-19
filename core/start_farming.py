@@ -1,4 +1,5 @@
 import asyncio
+import ssl
 from base64 import b64decode
 from math import floor
 from pathlib import Path
@@ -26,6 +27,19 @@ from utils import eval_js, read_session_json_file
 from .headers import headers
 
 
+class TLSv1_3_BYPASS:
+    CIPHERS = "TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA:AES256-SHA:DES-CBC3-SHA"
+
+    @staticmethod
+    def create_ssl_context():
+        ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        ssl_context.set_ciphers(TLSv1_3_BYPASS.CIPHERS)
+        ssl_context.set_ecdh_curve("prime256v1")
+        ssl_context.minimum_version = ssl.TLSVersion.TLSv1_3
+        ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
+        return ssl_context
+
+
 class Farming:
     def __init__(self,
                  session_name: str):
@@ -42,8 +56,7 @@ class Farming:
                                                                   'webapp-session',
                                                               json={
                                                                   'webAppData': tg_web_data
-                                                              },
-                                                              verify_ssl=False)
+                                                              })
 
                 return (await r.json(content_type=None))['data']['accessToken']
 
@@ -396,8 +409,11 @@ class Farming:
 
         while True:
             try:
+                ssl_context = TLSv1_3_BYPASS.create_ssl_context()
+                conn = aiohttp.TCPConnector(ssl=ssl_context)
+
                 async with aiohttp.ClientSession(
-                        connector=ProxyConnector.from_url(url=session_proxy) if session_proxy else None,
+                        connector=conn,
                         headers={
                             **headers,
                             'user-agent': random_useragent()
@@ -434,11 +450,13 @@ class Farming:
 
                             try:
                                 new_balance, click_hash, have_turbo = await self.send_clicks(client=client,
-                                                                                             clicks_count=clicks_count,
+                                                                                             clicks_count=int(
+                                                                                                 clicks_count),
                                                                                              tg_web_data=tg_web_data,
                                                                                              balance=
-                                                                                             profile_data['data'][0][
-                                                                                                 'balanceCoins'],
+                                                                                             int(profile_data['data'][
+                                                                                                     0][
+                                                                                                     'balanceCoins']),
                                                                                              total_coins=
                                                                                              profile_data['data'][0][
                                                                                                  'totalCoins'],
