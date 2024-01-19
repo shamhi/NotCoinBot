@@ -1,3 +1,4 @@
+import contextlib
 from itertools import cycle
 from better_proxy import Proxy
 from os.path import isdir
@@ -6,12 +7,14 @@ from os import listdir
 from os import mkdir
 from os.path import exists, isfile
 from sys import stderr
+import contextlib
 import argparse
 
 from loguru import logger
 
 from core import create_sessions, start_farming
 from database import on_startup_database
+from utils import monkeypatching
 
 logger.remove()
 logger.add(stderr, format='<white>{time:HH:mm:ss}</white>'
