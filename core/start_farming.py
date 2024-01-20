@@ -203,7 +203,7 @@ class Farming:
                           balance: int,
                           total_coins: str | int,
                           click_hash: str | None = None,
-                          turbo: bool | None = None) -> tuple[int | None, str | None, bool | None]:
+                          turbo: bool | None = None) -> tuple[int | str, int | None, str | None, bool | None]:
         while True:
             try:
                 json_data: dict = {
@@ -220,13 +220,14 @@ class Farming:
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
-                    verify_ssl=False)
+                    verify_ssl=True)
 
-                if r.status not in [201, 200] or r.content_type != 'application/json':
-                    logger.warning(f"{self.session_name} | Доступ к API запрещен: {r.status}")
+                status_code = r.status
+                if status_code not in [201, 200]:
+                    logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
                     logger.info(f"{self.session_name} | Сплю 60 сек")
-                    await asyncio.sleep(delay=60)
-                    continue
+                    await asyncio.sleep(delay=5)
+                    return status_code, None, None, None
 
                 if (await r.json(content_type=None)).get('data') \
                         and isinstance((await r.json(content_type=None))['data'], dict) \
@@ -246,10 +247,10 @@ class Farming:
                     next_hash: str | None = eval_js(
                         function=b64decode(s=(await r.json())['data'][0]['hash'][0]).decode())
 
-                    return balance + clicks_count, next_hash, (await r.json())['data'][0]['turboTimes'] > 0
+                    return status_code, balance + clicks_count, next_hash, (await r.json())['data'][0]['turboTimes'] > 0
 
                 logger.error(f'{self.session_name} | Не удалось сделать Click, ответ: {await r.text()}')
-                return None, None, None
+                return status_code, None, None, None
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при попытке сделать Click: {error}')
@@ -455,18 +456,17 @@ class Farming:
                                                 * profile_data['data'][0]['multipleClicks'] * turbo_multiplier
 
                             try:
-                                new_balance, click_hash, have_turbo = await self.send_clicks(client=client,
-                                                                                             clicks_count=
-                                                                                             int(clicks_count),
-                                                                                             tg_web_data=tg_web_data,
-                                                                                             balance=
-                                                                                             int(profile_data['data'][0]
-                                                                                                 ['balanceCoins']),
-                                                                                             total_coins=
-                                                                                             profile_data['data'][0]
-                                                                                             ['totalCoins'],
-                                                                                             click_hash=click_hash,
-                                                                                             turbo=active_turbo)
+                                status_code, new_balance, click_hash, have_turbo = \
+                                    await self.send_clicks(client=client,
+                                                           clicks_count=int(clicks_count),
+                                                           tg_web_data=tg_web_data,
+                                                           balance=int(profile_data['data'][0]['balanceCoins']),
+                                                           total_coins=profile_data['data'][0]['totalCoins'],
+                                                           click_hash=click_hash,
+                                                           turbo=active_turbo)
+
+                                if status_code not in [200, 201]:
+                                    continue
 
                             except TurboExpired:
                                 active_turbo: bool = False
