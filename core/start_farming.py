@@ -226,7 +226,7 @@ class Farming:
                 if status_code not in [201, 200]:
                     logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
                     logger.info(f"{self.session_name} | Сплю 60 сек")
-                    await asyncio.sleep(delay=5)
+                    await asyncio.sleep(delay=60)
                     return status_code, None, None, None
 
                 if (await r.json(content_type=None)).get('data') \
