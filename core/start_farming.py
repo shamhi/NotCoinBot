@@ -208,6 +208,7 @@ class Farming:
             try:
                 json_data: dict = {
                     'count': clicks_count,
+                    'hash': -1,
                     'webAppData': tg_web_data
                 }
 
@@ -219,11 +220,13 @@ class Farming:
 
                 opt_r = await client.options(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
-                    json=json_data)
+                    json=json_data,
+                    timeout=10)
 
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
+                    timeout=10,
                     verify_ssl=True)
 
                 status_code = r.status
