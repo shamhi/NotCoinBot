@@ -218,8 +218,8 @@ class Farming:
                 if turbo:
                     json_data['turbo']: bool = True
 
-                ssl_context = TLSv1_3_BYPASS.create_ssl_context()
-                conn = aiohttp.TCPConnector(ssl=ssl_context)
+                # ssl_context = TLSv1_3_BYPASS.create_ssl_context()
+                # conn = aiohttp.TCPConnector(ssl=ssl_context)
 
                 # async with aiohttp.ClientSession(connector=conn, headers=option_headers) as opt_client:
                 #     await opt_client.options(
@@ -234,10 +234,7 @@ class Farming:
                     verify_ssl=True)
 
                 status_code = r.status
-                if status_code not in [201, 200]:
-                    logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
-                    logger.info(f"{self.session_name} | Сплю 10 сек")
-                    await asyncio.sleep(delay=10)
+                if not str(status_code).startswith('2'):
                     return status_code, None, None, None
 
                 if (await r.json(content_type=None)).get('data') \
@@ -476,7 +473,11 @@ class Farming:
                                                            click_hash=click_hash,
                                                            turbo=active_turbo)
 
-                                if status_code not in [200, 201]:
+                                if status_code == 400:
+                                    logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
+                                    logger.info(f"{self.session_name} | Сплю 5 сек")
+                                    await asyncio.sleep(delay=5)
+
                                     logger.debug(f"{self.session_name} | Генерация нового Auth токена")
 
                                     access_token: str = await self.get_access_token(client=client,
@@ -484,7 +485,18 @@ class Farming:
                                     client.headers['Authorization']: str = f'Bearer {access_token}'
 
                                     logger.success(f"{self.session_name} | Генерация завершена")
+
+                                    access_token_created_time: float = time()
                                     continue
+
+                                if status_code == 403:
+                                    logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
+                                    logger.info(f"{self.session_name} | Сплю 60 сек")
+                                    await asyncio.sleep(delay=60)
+                                    continue
+
+                                if not str(status_code).startswith('2'):
+                                    logger.error(f"{self.session_name} | Неизвестный статус ответа: {status_code}")
 
                             except TurboExpired:
                                 active_turbo: bool = False
