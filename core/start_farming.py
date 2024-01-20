@@ -218,10 +218,14 @@ class Farming:
                 if turbo:
                     json_data['turbo']: bool = True
 
-                opt_r = await client.options(
-                    url='https://clicker-api.joincommunity.xyz/clicker/core/click',
-                    json=json_data,
-                    timeout=10)
+                ssl_context = TLSv1_3_BYPASS.create_ssl_context()
+                conn = aiohttp.TCPConnector(ssl=ssl_context)
+
+                # async with aiohttp.ClientSession(connector=conn, headers=option_headers) as opt_client:
+                #     await opt_client.options(
+                #         url='https://clicker-api.joincommunity.xyz/clicker/core/click',
+                #         json=json_data,
+                #         timeout=10)
 
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
@@ -473,6 +477,13 @@ class Farming:
                                                            turbo=active_turbo)
 
                                 if status_code not in [200, 201]:
+                                    logger.debug(f"{self.session_name} | Генерация нового Auth токена")
+
+                                    access_token: str = await self.get_access_token(client=client,
+                                                                                    tg_web_data=tg_web_data)
+                                    client.headers['Authorization']: str = f'Bearer {access_token}'
+
+                                    logger.success(f"{self.session_name} | Генерация завершена")
                                     continue
 
                             except TurboExpired:
