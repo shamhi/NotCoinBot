@@ -24,7 +24,7 @@ from data import config
 from database import actions as db_actions
 from exceptions import InvalidSession, TurboExpired
 from utils import eval_js, read_session_json_file
-from .headers import headers
+from .headers import headers, option_headers
 
 
 class TLSv1_3_BYPASS:
@@ -216,6 +216,10 @@ class Farming:
 
                 if turbo:
                     json_data['turbo']: bool = True
+
+                opt_r = await client.options(
+                    url='https://clicker-api.joincommunity.xyz/clicker/core/click',
+                    json=json_data)
 
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
@@ -423,7 +427,7 @@ class Farming:
                         connector=conn,
                         headers={
                             **headers,
-                            'user-agent': random_useragent()
+                            # 'user-agent': random_useragent()
                         }) as client:
                     while True:
                         try:
