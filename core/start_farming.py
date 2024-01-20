@@ -198,6 +198,7 @@ class Farming:
 
     async def send_clicks(self,
                           client: aiohttp.ClientSession,
+                          opt_client: aiohttp.ClientSession,
                           clicks_count: int,
                           tg_web_data: str,
                           balance: int,
@@ -218,14 +219,10 @@ class Farming:
                 if turbo:
                     json_data['turbo']: bool = True
 
-                # ssl_context = TLSv1_3_BYPASS.create_ssl_context()
-                # conn = aiohttp.TCPConnector(ssl=ssl_context)
-
-                # async with aiohttp.ClientSession(connector=conn, headers=option_headers) as opt_client:
-                #     await opt_client.options(
-                #         url='https://clicker-api.joincommunity.xyz/clicker/core/click',
-                #         json=json_data,
-                #         timeout=10)
+                await opt_client.options(
+                    url='https://clicker-api.joincommunity.xyz/clicker/core/click',
+                    json=json_data,
+                    timeout=10)
 
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
@@ -433,6 +430,8 @@ class Farming:
                             **headers,
                             # 'user-agent': random_useragent()
                         }) as client:
+                    opt_client = aiohttp.ClientSession(connector=conn, headers=option_headers)
+
                     while True:
                         try:
                             if time() - access_token_created_time >= 1800:
@@ -466,6 +465,7 @@ class Farming:
                             try:
                                 status_code, new_balance, click_hash, have_turbo = \
                                     await self.send_clicks(client=client,
+                                                           opt_client=opt_client,
                                                            clicks_count=int(clicks_count),
                                                            tg_web_data=tg_web_data,
                                                            balance=int(profile_data['data'][0]['balanceCoins']),
