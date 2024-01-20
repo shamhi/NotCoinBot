@@ -1,20 +1,20 @@
-import contextlib
 from itertools import cycle
-from better_proxy import Proxy
 from os.path import isdir
-import asyncio
 from os import listdir
 from os import mkdir
 from os.path import exists, isfile
 from sys import stderr
-import contextlib
 import argparse
+import asyncio
 
 from loguru import logger
+from better_proxy import Proxy
 
 from core import create_sessions, start_farming
 from database import on_startup_database
+from data import config
 from utils import monkeypatching
+
 
 logger.remove()
 logger.add(stderr, format='<white>{time:HH:mm:ss}</white>'
@@ -65,10 +65,12 @@ if __name__ == '__main__':
         with open('data/proxies.txt', 'w') as file:
             file.write('')
 
-    with open(file='data/proxies.txt',
-              mode='r',
-              encoding='utf-8-sig') as file:
-        # proxies: list[str] = [Proxy.from_str(proxy=row.strip()).as_url for row in file]
+    if config.USE_PROXY_FROM_FILE:
+        with open(file='data/proxies.txt',
+                  mode='r',
+                  encoding='utf-8-sig') as file:
+            proxies: list[str] = [Proxy.from_str(proxy=row.strip()).as_url for row in file]
+    else:
         proxies = []
 
     if proxies:
