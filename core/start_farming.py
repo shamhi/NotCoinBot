@@ -1,5 +1,6 @@
 import asyncio
 import ssl
+import json
 from base64 import b64decode
 from math import floor
 from pathlib import Path
@@ -219,11 +220,12 @@ class Farming:
                 if turbo:
                     json_data['turbo']: bool = True
 
-                await opt_client.options(
+                opt_r = await opt_client.options(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
                     timeout=10)
 
+                client.headers['Content-Length'] = str(len(json.dumps(json_data)))
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
@@ -440,6 +442,7 @@ class Farming:
                                 access_token: str = await self.get_access_token(client=client,
                                                                                 tg_web_data=tg_web_data)
                                 client.headers['Authorization']: str = f'Bearer {access_token}'
+                                opt_client.headers['Authorization']: str = f'Bearer {access_token}'
                                 access_token_created_time: float = time()
 
                             profile_data: dict = await self.get_profile_data(client=client)
@@ -475,14 +478,14 @@ class Farming:
 
                                 if status_code == 400:
                                     logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
-                                    logger.info(f"{self.session_name} | Сплю 5 сек")
-                                    await asyncio.sleep(delay=5)
+                                    await asyncio.sleep(delay=2)
 
                                     logger.debug(f"{self.session_name} | Генерация нового Auth токена")
 
                                     access_token: str = await self.get_access_token(client=client,
                                                                                     tg_web_data=tg_web_data)
                                     client.headers['Authorization']: str = f'Bearer {access_token}'
+                                    opt_client.headers['Authorization']: str = f'Bearer {access_token}'
 
                                     logger.success(f"{self.session_name} | Генерация завершена")
 
@@ -491,8 +494,8 @@ class Farming:
 
                                 if status_code == 403:
                                     logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
-                                    logger.info(f"{self.session_name} | Сплю 60 сек")
-                                    await asyncio.sleep(delay=60)
+                                    logger.info(f"{self.session_name} | Сплю {config.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
+                                    await asyncio.sleep(delay=config.SLEEP_AFTER_FORBIDDEN_STATUS)
                                     continue
 
                                 if not str(status_code).startswith('2'):
