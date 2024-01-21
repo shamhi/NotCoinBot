@@ -205,7 +205,8 @@ class Farming:
                           balance: int,
                           total_coins: str | int,
                           click_hash: str | None = None,
-                          turbo: bool | None = None) -> tuple[int | str, int | None, str | None, bool | None]:
+                          turbo: bool | None = None
+                          ) -> tuple[int | str, int | str | None, int | None, str | None, bool | None]:
         while True:
             try:
                 json_data: dict = {
@@ -220,7 +221,7 @@ class Farming:
                 if turbo:
                     json_data['turbo']: bool = True
 
-                opt_r = await opt_client.options(
+                await opt_client.options(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
                     timeout=10)
@@ -235,28 +236,32 @@ class Farming:
                 if not str(status_code).startswith('2'):
                     return status_code, None, None, None
 
-                if (await r.json(content_type=None)).get('data') \
-                        and isinstance((await r.json(content_type=None))['data'], dict) \
-                        and (await r.json(content_type=None))['data'].get('message', '') == 'Turbo mode is expired':
+                response_json: dict = await r.json(content_type=None)
+
+                if response_json.get('data') \
+                        and isinstance(response_json['data'], dict) \
+                        and response_json['data'].get('message', '') == 'Turbo mode is expired':
                     raise TurboExpired()
 
-                if (await r.json(content_type=None)).get('data') \
-                        and isinstance((await r.json(content_type=None))['data'], dict) \
-                        and (await r.json(content_type=None))['data'].get('message', '') == 'Try later':
+                if response_json.get('data') \
+                        and isinstance(response_json['data'], dict) \
+                        and response_json['data'].get('message', '') == 'Try later':
                     await asyncio.sleep(delay=1)
                     continue
 
-                if (await r.json(content_type=None)).get('ok'):
+                if response_json.get('ok'):
+                    available_coins = response_json.get('data', [])[0].get('availableCoins')
                     logger.success(f'{self.session_name} | Успешно сделал Click | Balance: '
                                    f'{balance + clicks_count} (+{clicks_count}) | Total Coins: {total_coins}')
 
                     next_hash: str | None = eval_js(
                         function=b64decode(s=(await r.json())['data'][0]['hash'][0]).decode())
 
-                    return status_code, balance + clicks_count, next_hash, (await r.json())['data'][0]['turboTimes'] > 0
+                    return (status_code, balance + clicks_count, available_coins, next_hash,
+                            (await r.json())['data'][0]['turboTimes'] > 0)
 
                 logger.error(f'{self.session_name} | Не удалось сделать Click, ответ: {await r.text()}')
-                return status_code, None, None, None
+                return status_code, None, None, None, None
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при попытке сделать Click: {error}')
@@ -465,7 +470,7 @@ class Farming:
                                                 * profile_data['data'][0]['multipleClicks'] * turbo_multiplier
 
                             try:
-                                status_code, new_balance, click_hash, have_turbo = \
+                                status_code, new_balance, available_coins, click_hash, have_turbo = \
                                     await self.send_clicks(client=client,
                                                            opt_client=opt_client,
                                                            clicks_count=int(clicks_count),
@@ -525,6 +530,20 @@ class Farming:
 
                                 else:
                                     turbo_multiplier: int = 1
+
+                            if available_coins:
+                                min_available_coins = config.MIN_AVAILABLE_COINS
+
+                                if available_coins < min_available_coins:
+                                    sleep_time_to_min_coins = config.SLEEP_WITH_MIN_COINS
+
+                                    logger.info(f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
+                                    logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
+
+                                    await asyncio.sleep(delay=sleep_time_to_min_coins)
+
+                                    logger.info(f"{self.session_name} | Продолжаю кликать!")
+                                    continue
 
                             if new_balance:
                                 merged_data: dict | None = await self.get_merged_list(client=client)
