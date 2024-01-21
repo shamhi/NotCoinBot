@@ -481,6 +481,7 @@ class Farming:
 
                                     logger.debug(f"{self.session_name} | Генерация нового Auth токена")
 
+                                    tg_web_data: str = await self.get_tg_web_data(session_proxy=session_proxy)
                                     access_token: str = await self.get_access_token(client=client,
                                                                                     tg_web_data=tg_web_data)
                                     client.headers['Authorization']: str = f'Bearer {access_token}'
