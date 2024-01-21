@@ -225,7 +225,6 @@ class Farming:
                     json=json_data,
                     timeout=10)
 
-                client.headers['Content-Length'] = str(len(json.dumps(json_data)))
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
