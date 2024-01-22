@@ -234,7 +234,7 @@ class Farming:
 
                 status_code = r.status
                 if not str(status_code).startswith('2'):
-                    return status_code, None, None, None
+                    return status_code, None, None, None, None
 
                 response_json: dict = await r.json(content_type=None)
 
