@@ -2,6 +2,8 @@
 
 ![alt text](https://i.imgur.com/PDYwSJ9.png)
 
+> 🇪🇳 README in english available [here](README-EN.md)
+
 ## Функционал  
 + _Многопоточность_
 + _Привязка прокси к сессии_
@@ -36,3 +38,32 @@
 + **SLEEP_BEFORE_ACTIVATE_TURBO** - Диапазон задержки перед активацией Turbo (в секундах)
 ***
 + **SLEEP_BY_MIN_COINS_TIME** - Задержка при достижении минимального количетсва коинов (в секундах)
+
+## Установка
+Вы можете скачать [**Репозиторий**](https://github.com/shamhi/NotCoinBot) клонированием на вашу систему и установкой необходимых зависимостей:
+```
+~ >>> git clone https://github.com/shamhi/NotCoinBot.git 
+~ >>> cd NotCoinBot.git
+
+# Linux
+~/NotCoinBot >>> python3 -m venv venv
+~/NotCoinBot >>> source venv/bin/activate
+~/NotCoinBot >>> pip3 install -r requirements.txt
+~/NotCoinBot >>> python3 main.py
+
+# Windows
+~/NotCoinBot >>> python -m venv venv
+~/NotCoinBot >>> .\venv\Scripts\activate
+~/NotCoinBot >>> pip install -r .\requirements.txt
+~/NotCoinBot >>> python .\main.py
+```
+
+Также для быстрого запуска вы можете использовать аргументы, например:
+```
+~/NotCoinBot >>> python3 main.py --action (1/2)
+# Или
+~/NotCoinBot >>> python3 main.py -a (1/2)
+
+# 1 - Запускает регистратор сессии
+# 2 - Запускает все сохраненные сессии
+```
