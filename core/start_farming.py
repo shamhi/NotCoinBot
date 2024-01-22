@@ -531,19 +531,20 @@ class Farming:
                                 else:
                                     turbo_multiplier: int = 1
 
-                            if available_coins:
-                                min_available_coins = config.MIN_AVAILABLE_COINS
+                            if config.SLEEP_BY_MIN_COINS:
+                                if available_coins:
+                                    min_available_coins = config.MIN_AVAILABLE_COINS
 
-                                if available_coins < min_available_coins:
-                                    sleep_time_to_min_coins = config.SLEEP_WITH_MIN_COINS
+                                    if available_coins < min_available_coins:
+                                        sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
 
-                                    logger.info(f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
-                                    logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
+                                        logger.info(f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
+                                        logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
 
-                                    await asyncio.sleep(delay=sleep_time_to_min_coins)
+                                        await asyncio.sleep(delay=sleep_time_to_min_coins)
 
-                                    logger.info(f"{self.session_name} | Продолжаю кликать!")
-                                    continue
+                                        logger.info(f"{self.session_name} | Продолжаю кликать!")
+                                        continue
 
                             if new_balance:
                                 merged_data: dict | None = await self.get_merged_list(client=client)
