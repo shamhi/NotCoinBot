@@ -428,19 +428,21 @@ class Farming:
         while True:
             try:
                 ssl_context = TLSv1_3_BYPASS.create_ssl_context()
-                conn = aiohttp.TCPConnector(ssl=ssl_context)
+
+                ssl_conn = aiohttp.TCPConnector(ssl=ssl_context)
+                proxy_conn = ProxyConnector.from_url(url=session_proxy) if session_proxy else None
 
                 async with aiohttp.ClientSession(
-                        connector=conn,
+                        connector_owner=proxy_conn,
+                        connector=ssl_conn,
                         headers={
                             **headers,
-                            # 'user-agent': random_useragent()
                         }) as client:
-                    opt_client = aiohttp.ClientSession(connector=conn, headers=option_headers)
+                    opt_client = aiohttp.ClientSession(connector=ssl_conn, connector_owner=proxy_conn, headers=option_headers)
 
                     while True:
                         try:
-                            if time() - access_token_created_time >= 1800:
+                            if time() - access_token_created_time >= (config.SLEEP_TO_UPDATE_USER_DATA * 60):
                                 tg_web_data: str = await self.get_tg_web_data(session_proxy=session_proxy)
 
                                 access_token: str = await self.get_access_token(client=client,
