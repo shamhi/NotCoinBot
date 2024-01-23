@@ -37,7 +37,7 @@
 ***
 + **SLEEP_BEFORE_ACTIVATE_TURBO** - Range of delay before activating Turbo (in seconds)
 ***
-+ **SLEEP_TO_UPDATE_USER_DATA** - Range of delay before updating user data (in minutes)
++ **SLEEP_TO_UPDATE_USER_DATA** - Delay before updating user data (in minutes)
 ***
 + **SLEEP_BY_MIN_COINS_TIME** - Delay when minimum number of coins is reached (in seconds)
 
