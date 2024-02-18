@@ -3,7 +3,7 @@ from pyrogram.types import Message
 from pyrogram.raw.functions.messages import RequestWebView
 
 from utils import launch, scripts
-from utils.emojis import rwarning, rdeny
+from utils.emojis import rwarning, rdeny, rcheck
 from utils.launch_farming import clients
 
 
@@ -24,7 +24,8 @@ async def get_notcoin_url(client: Client, message: Message):
 
 
 @Client.on_message(filters.me & filters.chat('me') & filters.command('farm', prefixes='/'))
-@scripts.with_args('<b>Эта команда не работает без аргументов</b>')
+@scripts.with_args('<b>This command does not work without arguments\n'
+                   'Type <code>/farm on</code> to start or <code>/farm off</code> to stop</b>')
 async def launch_farming(client: Client, message: Message):
     flag = scripts.get_command_args(message, 'farm')
 
@@ -32,6 +33,7 @@ async def launch_farming(client: Client, message: Message):
     flags_to_stop = ['off', 'stop']
 
     if flag in flags_to_start:
+        await message.edit(f"{rcheck()}Farming started!")
         await launch(clients=clients)
     elif flag in flags_to_stop:
         status = await scripts.stop_task(client=client)

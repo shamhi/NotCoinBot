@@ -118,4 +118,4 @@ async def stop_task(client: Client = None) -> str:
         except:
             ...
 
-    return f'<b>{rcheck()}Процесс кликера остановлен</b>'
+    return f'<b>{rcheck()}The clicker process has stopped</b>'
