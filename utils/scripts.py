@@ -113,7 +113,6 @@ async def stop_task(client: Client = None) -> str:
 
     for task in farming_tasks:
         try:
-            print(task._coro.__name__)
             task.cancel()
         except:
             ...
