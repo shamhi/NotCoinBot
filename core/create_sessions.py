@@ -1,4 +1,5 @@
 import json
+import shutil
 
 import pyrogram
 from better_proxy import Proxy
@@ -62,7 +63,7 @@ async def create_sessions() -> None:
             api_id=API_ID,
             api_hash=API_HASH,
             name=session_name,
-            workdir='sessions',
+            workdir="sessions/",
             proxy=proxy_dict
         )
 
@@ -70,6 +71,7 @@ async def create_sessions() -> None:
             user_data = await session.get_me()
 
         logger.success(f'Успешно добавлена сессия {user_data.username} | {user_data.first_name} {user_data.last_name}')
+
 
         await db_actions.add_session(session_name=session_name,
                                      session_proxy=proxy.as_url if proxy else '')

@@ -9,6 +9,13 @@ async def add_session(session_name: str,
         await db.commit()
 
 
+async def get_session_names():
+    async with aiosqlite.connect(database='database/sessions.db') as db:
+        request = await db.execute(sql='SELECT session_name FROM sessions')
+        for name in await request.fetchall():
+            yield name[0]
+
+
 async def get_session_proxy_by_name(session_name: str) -> str | None:
     async with aiosqlite.connect(database='database/sessions.db') as db:
         async with db.execute(sql='SELECT session_proxy FROM sessions WHERE session_name = ?',

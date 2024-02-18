@@ -1,30 +1,21 @@
 import asyncio
 import ssl
-import json
 from base64 import b64decode
 from math import floor
-from pathlib import Path
 from random import randint
 from time import time
 from urllib.parse import unquote
-from contextlib import suppress
 
 import aiohttp
-from TGConvertor.manager.exceptions import ValidationError
-from TGConvertor.manager.manager import SessionManager
 from aiohttp_proxy import ProxyConnector
-from better_proxy import Proxy
 from loguru import logger
-from opentele.exception import TFileNotFound, OpenTeleException
-from pyuseragents import random as random_useragent
-from telethon import TelegramClient
-from telethon import functions
-from telethon.sessions import StringSession
+from pyrogram import Client
+from pyrogram.raw import functions as p_functions
 
 from data import config
 from database import actions as db_actions
 from exceptions import InvalidSession, TurboExpired
-from utils import eval_js, read_session_json_file
+from utils import eval_js, scripts
 from .headers import headers, option_headers
 
 
@@ -43,8 +34,10 @@ class TLSv1_3_BYPASS:
 
 class Farming:
     def __init__(self,
-                 session_name: str):
+                 session_name: str,
+                 client: Client):
         self.session_name: str = session_name
+        self.client: Client = client
 
     async def get_access_token(self,
                                client: aiohttp.ClientSession,
@@ -63,113 +56,53 @@ class Farming:
 
             except Exception as error:
                 if r:
-                    logger.error(f'{self.session_name} | Неизвестная ошибка при получении Access Token: {error}, '
-                                 f'ответ: {await r.text()}')
+                    status_code = r.status
+                    logger.error(f'{self.session_name} | Неизвестная ошибка при получении Access Token: {error} | '
+                                 f'Статус: {status_code} | Ответ: {await r.text()}')
 
                 else:
                     logger.error(f'{self.session_name} | Неизвестная ошибка при получении Access Token: {error}')
+
+                await asyncio.sleep(delay=2)
 
     async def get_tg_web_data(self,
                               session_proxy: str | None) -> str | None:
         while True:
             try:
                 if session_proxy:
-                    try:
-                        proxy: Proxy = Proxy.from_str(
-                            proxy=session_proxy
-                        )
-
-                        proxy_dict: dict = {
-                            'proxy_type': proxy.protocol,
-                            'addr': proxy.host,
-                            'port': proxy.port,
-                            'username': proxy.login,
-                            'password': proxy.password
-                        }
-
-                    except ValueError:
-                        proxy_dict: None = None
-
+                    proxy_dict = scripts.get_proxy_dict(session_proxy=session_proxy)
                 else:
                     proxy_dict: None = None
 
-                session: any = None
+                self.client.proxy = proxy_dict
 
-                try:
-                    session = SessionManager.from_tdata_folder(folder=Path(f'sessions/{self.session_name}'))
+                with_tg = True
 
-                except (ValidationError, FileNotFoundError, TFileNotFound, OpenTeleException):
-                    pass
+                if not self.client.is_connected:
+                    with_tg = False
+                    await self.client.connect()
 
-                if not session:
-                    for action in [SessionManager.from_pyrogram_file, SessionManager.from_telethon_file]:
-                        try:
-                            # noinspection PyArgumentList
-                            session = await action(file=Path(f'sessions/{self.session_name}.session'))
-
-                        except (ValidationError, FileNotFoundError, TFileNotFound, OpenTeleException):
-                            pass
-
-                        else:
-                            break
-
-                if not session:
-                    raise InvalidSession(self.session_name)
-
-                telethon_string: str = session.to_telethon_string()
-                platform_data: dict = await read_session_json_file(session_name=self.session_name)
-
-                client = TelegramClient(session=StringSession(string=telethon_string),
-                                        api_id=platform_data.get('api_id', config.API_ID),
-                                        api_hash=platform_data.get('api_hash', config.API_HASH),
-                                        device_model=platform_data.get('device_model', None),
-                                        system_version=platform_data.get('system_version', None),
-                                        app_version=platform_data.get('app_version', None),
-                                        lang_code=platform_data.get('lang_code', 'en'),
-                                        system_lang_code=platform_data.get('system_lang_code', 'en'),
-                                        proxy=proxy_dict)
-
-                try:
-                    await client.connect()
-
-                    if not await client.is_user_authorized():
-                        raise InvalidSession(self.session_name)
-
-                except InvalidSession as error:
-                    raise error
-
-                except Exception as error:
-                    raise error
-
-                finally:
-                    await client.disconnect()
-
-                async with TelegramClient(session=StringSession(string=telethon_string),
-                                          api_id=platform_data.get('api_id', config.API_ID),
-                                          api_hash=platform_data.get('api_hash', config.API_HASH),
-                                          device_model=platform_data.get('device_model', None),
-                                          system_version=platform_data.get('system_version', None),
-                                          app_version=platform_data.get('app_version', None),
-                                          lang_code=platform_data.get('lang_code', 'en'),
-                                          system_lang_code=platform_data.get('system_lang_code', 'en'),
-                                          proxy=proxy_dict) as client:
-                    await client.send_message(entity='notcoin_bot',
-                                              message='/start')
-                    # noinspection PyTypeChecker
-                    result = await client(functions.messages.RequestWebViewRequest(
-                        peer='notcoin_bot',
-                        bot='notcoin_bot',
+                web_view = await self.client.invoke(
+                    p_functions.messages.RequestWebView(
+                        peer=await self.client.resolve_peer('notcoin_bot'),
+                        bot=await self.client.resolve_peer('notcoin_bot'),
                         platform='android',
                         from_bot_menu=False,
-                        url='https://clicker.joincommunity.xyz/clicker',
-                    ))
-                    auth_url: str = result.url
+                        url='https://clicker.joincommunity.xyz/clicker'
+                    )
+                )
 
-                    tg_web_data: str = unquote(string=unquote(
-                        string=auth_url.split(sep='tgWebAppData=',
-                                              maxsplit=1)[1].split(sep='&tgWebAppVersion',
-                                                                   maxsplit=1)[0]
-                    ))
+                if with_tg is False:
+                    await self.client.disconnect()
+
+                auth_url = web_view.url
+
+
+                tg_web_data: str = unquote(string=unquote(
+                    string=auth_url.split(sep='tgWebAppData=',
+                                          maxsplit=1)[1].split(sep='&tgWebAppVersion',
+                                                               maxsplit=1)[0]
+                ))
 
                 return tg_web_data
 
@@ -178,6 +111,7 @@ class Farming:
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при авторизации: {error}')
+                await asyncio.sleep(delay=2)
 
     async def get_profile_data(self,
                                client: aiohttp.ClientSession) -> dict:
@@ -187,15 +121,20 @@ class Farming:
                     url='https://clicker-api.joincommunity.xyz/clicker/profile',
                     verify_ssl=False)
 
-                if not (await r.json(content_type=None)).get('ok'):
-                    logger.error(f'{self.session_name} | Неизвестный ответ при получении данных профиля, '
-                                 f'ответ: {await r.text()}')
+                status_code = r.status
+                try:
+                    await r.json(content_type=None)
+                except:
+                    logger.error(f'{self.session_name} | Неизвестный ответ при получении данных профиля | '
+                                 f'Статус: {status_code} | Ответ: {await r.text()}')
+                    await asyncio.sleep(delay=2)
                     continue
 
                 return await r.json(content_type=None)
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при получении данных профиля: {error}')
+                await asyncio.sleep(delay=2)
 
     async def send_clicks(self,
                           client: aiohttp.ClientSession,
@@ -230,7 +169,7 @@ class Farming:
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
                     timeout=10,
-                    verify_ssl=True)
+                    verify_ssl=False)
 
                 status_code = r.status
                 if not str(status_code).startswith('2'):
@@ -265,6 +204,7 @@ class Farming:
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при попытке сделать Click: {error}')
+                await asyncio.sleep(delay=2)
 
     async def get_merged_list(self,
                               client: aiohttp.ClientSession) -> dict | None:
@@ -288,6 +228,8 @@ class Farming:
 
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при получении списка товаров: {error}')
+
+            await asyncio.sleep(delay=2)
 
     async def buy_item(self,
                        client: aiohttp.ClientSession,
@@ -317,6 +259,7 @@ class Farming:
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при покупке в магазине: {error}')
 
+            await asyncio.sleep(delay=2)
             return False
 
     async def activate_turbo(self,
@@ -341,6 +284,7 @@ class Farming:
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при активации Turbo: {error}')
 
+            await asyncio.sleep(delay=2)
             return
 
     async def activate_task(self,
@@ -371,6 +315,7 @@ class Farming:
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при активации Task {task_id}: {error}')
 
+            await asyncio.sleep(delay=2)
             return False
 
     async def get_free_buffs_data(self,
@@ -411,109 +356,270 @@ class Farming:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при получении статуса бесплатных баффов: '
                              f'{error}')
 
+            await asyncio.sleep(delay=2)
             return False, False
 
-    async def start_farming(self,
-                            proxy: str | None = None):
+    @staticmethod
+    async def close_connectors(*connectors: aiohttp.TCPConnector):
+        for connector in connectors:
+            try:
+                if connector:
+                    await connector.close() if not connector.closed else ...
+            except:
+                ...
+
+    async def run(self,
+                  proxy: str | None = None):
         session_proxy: str = await db_actions.get_session_proxy_by_name(session_name=self.session_name)
 
         if not session_proxy and config.USE_PROXY_FROM_FILE:
             session_proxy: str = proxy
 
         access_token_created_time: float = 0
-        click_hash: None | str = None
+        tg_web_data: str | None = None
+        click_hash: str | None = None
         active_turbo: bool = False
         turbo_multiplier: int = 1
 
         while True:
+            ssl_context = TLSv1_3_BYPASS.create_ssl_context()
+
+            ssl_conn = aiohttp.TCPConnector(ssl=ssl_context)
+            proxy_conn = ProxyConnector.from_url(url=session_proxy) if session_proxy else None
+
+            client = aiohttp.ClientSession(
+                connector_owner=proxy_conn,
+                connector=ssl_conn,
+                headers=headers)
+
+            opt_client = aiohttp.ClientSession(
+                connector=ssl_conn,
+                connector_owner=proxy_conn,
+                headers=option_headers)
+
             try:
-                ssl_context = TLSv1_3_BYPASS.create_ssl_context()
+                while True:
+                    try:
+                        if time() - access_token_created_time >= (config.SLEEP_TO_UPDATE_USER_DATA * 60):
+                            tg_web_data: str = await self.get_tg_web_data(session_proxy=session_proxy)
 
-                ssl_conn = aiohttp.TCPConnector(ssl=ssl_context)
-                proxy_conn = ProxyConnector.from_url(url=session_proxy) if session_proxy else None
+                            access_token: str = await self.get_access_token(client=client,
+                                                                            tg_web_data=tg_web_data)
+                            client.headers['Authorization']: str = f'Bearer {access_token}'
+                            opt_client.headers['Authorization']: str = f'Bearer {access_token}'
+                            headers['Authorization']: str = f'Bearer {access_token}'
+                            option_headers['Authorization']: str = f'Bearer {access_token}'
 
-                async with aiohttp.ClientSession(
-                        connector_owner=proxy_conn,
-                        connector=ssl_conn,
-                        headers={
-                            **headers,
-                        }) as client:
-                    opt_client = aiohttp.ClientSession(connector=ssl_conn, connector_owner=proxy_conn, headers=option_headers)
+                            access_token_created_time: float = time()
 
-                    while True:
-                        try:
-                            if time() - access_token_created_time >= (config.SLEEP_TO_UPDATE_USER_DATA * 60):
-                                tg_web_data: str = await self.get_tg_web_data(session_proxy=session_proxy)
+                        profile_data: dict = await self.get_profile_data(client=client)
 
-                                access_token: str = await self.get_access_token(client=client,
-                                                                                tg_web_data=tg_web_data)
-                                client.headers['Authorization']: str = f'Bearer {access_token}'
-                                opt_client.headers['Authorization']: str = f'Bearer {access_token}'
-                                access_token_created_time: float = time()
-
-                            profile_data: dict = await self.get_profile_data(client=client)
-
-                            if not active_turbo:
-                                if config.MIN_CLICKS_COUNT > floor(profile_data['data'][0]['availableCoins'] \
-                                                                   / profile_data['data'][0]['multipleClicks']):
-                                    logger.info(f'{self.session_name} | Недостаточно монет для клика')
-                                    continue
-
-                            if floor(profile_data['data'][0]['availableCoins'] \
-                                     / profile_data['data'][0]['multipleClicks']) < 160:
-                                max_clicks_count: int = floor(profile_data['data'][0]['availableCoins'] \
-                                                              / profile_data['data'][0]['multipleClicks'])
-
-                            else:
-                                max_clicks_count: int = 160
-
-                            clicks_count: int = randint(a=config.MIN_CLICKS_COUNT,
-                                                        b=max_clicks_count) \
-                                                * profile_data['data'][0]['multipleClicks'] * turbo_multiplier
-
-                            try:
-                                status_code, new_balance, available_coins, click_hash, have_turbo = \
-                                    await self.send_clicks(client=client,
-                                                           opt_client=opt_client,
-                                                           clicks_count=int(clicks_count),
-                                                           tg_web_data=tg_web_data,
-                                                           balance=int(profile_data['data'][0]['balanceCoins']),
-                                                           total_coins=profile_data['data'][0]['totalCoins'],
-                                                           click_hash=click_hash,
-                                                           turbo=active_turbo)
-
-                                if status_code == 400:
-                                    logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
-                                    await asyncio.sleep(delay=2)
-
-                                    logger.debug(f"{self.session_name} | Генерация нового Auth токена")
-
-                                    tg_web_data: str = await self.get_tg_web_data(session_proxy=session_proxy)
-                                    access_token: str = await self.get_access_token(client=client,
-                                                                                    tg_web_data=tg_web_data)
-                                    client.headers['Authorization']: str = f'Bearer {access_token}'
-                                    opt_client.headers['Authorization']: str = f'Bearer {access_token}'
-
-                                    logger.success(f"{self.session_name} | Генерация завершена")
-
-                                    access_token_created_time: float = time()
-                                    continue
-
-                                if status_code == 403:
-                                    logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
-                                    logger.info(f"{self.session_name} | Сплю {config.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
-                                    await asyncio.sleep(delay=config.SLEEP_AFTER_FORBIDDEN_STATUS)
-                                    continue
-
-                                if not str(status_code).startswith('2'):
-                                    logger.error(f"{self.session_name} | Неизвестный статус ответа: {status_code}")
-
-                            except TurboExpired:
-                                active_turbo: bool = False
-                                turbo_multiplier: int = 1
+                        if not active_turbo:
+                            if config.MIN_CLICKS_COUNT > floor(profile_data['data'][0]['availableCoins'] \
+                                                               / profile_data['data'][0]['multipleClicks']):
+                                logger.info(f'{self.session_name} | Недостаточно монет для клика')
                                 continue
 
-                            if have_turbo:
+                        if floor(profile_data['data'][0]['availableCoins'] \
+                                 / profile_data['data'][0]['multipleClicks']) < 160:
+                            max_clicks_count: int = floor(profile_data['data'][0]['availableCoins'] \
+                                                          / profile_data['data'][0]['multipleClicks'])
+
+                        else:
+                            max_clicks_count: int = 160
+
+                        clicks_count: int = randint(a=config.MIN_CLICKS_COUNT,
+                                                    b=max_clicks_count) \
+                                            * profile_data['data'][0]['multipleClicks'] * turbo_multiplier
+
+                        try:
+                            status_code, new_balance, available_coins, click_hash, have_turbo = \
+                                await self.send_clicks(client=client,
+                                                       opt_client=opt_client,
+                                                       clicks_count=int(clicks_count),
+                                                       tg_web_data=tg_web_data,
+                                                       balance=int(profile_data['data'][0]['balanceCoins']),
+                                                       total_coins=profile_data['data'][0]['totalCoins'],
+                                                       click_hash=click_hash,
+                                                       turbo=active_turbo)
+
+                            if status_code == 400:
+                                logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
+                                await asyncio.sleep(delay=15)
+
+                                await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
+                                access_token_created_time = 0
+
+                                break
+
+                            if status_code == 403:
+                                logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
+                                logger.info(f"{self.session_name} | Сплю {config.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
+                                await asyncio.sleep(delay=config.SLEEP_AFTER_FORBIDDEN_STATUS)
+
+                                await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
+                                access_token_created_time = 0
+
+                                break
+
+                            if not str(status_code).startswith('2'):
+                                logger.error(f"{self.session_name} | Неизвестный статус ответа: {status_code}")
+                                await asyncio.sleep(delay=15)
+
+                                continue
+
+                        except TurboExpired:
+                            active_turbo: bool = False
+                            turbo_multiplier: int = 1
+
+                            continue
+
+                        if have_turbo:
+                            random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_TURBO[0],
+                                                             b=config.SLEEP_BEFORE_ACTIVATE_TURBO[1])
+
+                            logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
+                                        f'Turbo')
+
+                            await asyncio.sleep(delay=random_sleep_time)
+
+                            turbo_multiplier: int | None = await self.activate_turbo(client=client)
+
+                            if turbo_multiplier:
+                                logger.success(f'{self.session_name} | Успешно активировал Turbo: '
+                                               f'x{turbo_multiplier}')
+                                active_turbo: bool = True
+                                continue
+
+                            else:
+                                turbo_multiplier: int = 1
+
+                        if new_balance:
+                            merged_data: dict | None = await self.get_merged_list(client=client)
+
+                            if merged_data:
+                                for current_merge in merged_data['data']:
+                                    match current_merge['id']:
+                                        case 1:
+                                            if not config.AUTO_BUY_ENERGY_BOOST:
+                                                continue
+
+                                            energy_price: int | None = current_merge['price']
+
+                                            if new_balance >= energy_price \
+                                                    and current_merge['max'] > current_merge['count']:
+                                                sleep_before_buy_merge: int = randint(
+                                                    a=config.SLEEP_BEFORE_BUY_MERGE[0],
+                                                    b=config.SLEEP_BEFORE_BUY_MERGE[1]
+                                                )
+                                                logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
+                                                            f'сек. перед покупкой Energy Boost')
+
+                                                await asyncio.sleep(delay=sleep_before_buy_merge)
+
+                                                if await self.buy_item(client=client,
+                                                                       item_id=1):
+                                                    logger.success(f'{self.session_name} | Успешно купил Energy '
+                                                                   'Boost')
+                                                    continue
+
+                                        case 2:
+                                            if not config.AUTO_BUY_SPEED_BOOST:
+                                                continue
+
+                                            speed_price: int | None = current_merge['price']
+
+                                            if new_balance >= speed_price \
+                                                    and current_merge['max'] > current_merge['count']:
+                                                sleep_before_buy_merge: int = randint(
+                                                    a=config.SLEEP_BEFORE_BUY_MERGE[0],
+                                                    b=config.SLEEP_BEFORE_BUY_MERGE[1]
+                                                )
+                                                logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
+                                                            'сек. перед покупкой Speed Boost')
+
+                                                await asyncio.sleep(delay=sleep_before_buy_merge)
+
+                                                if await self.buy_item(client=client,
+                                                                       item_id=2):
+                                                    logger.success(
+                                                        f'{self.session_name} | Успешно купил Speed Boost')
+                                                    continue
+
+                                        case 3:
+                                            if not config.AUTO_BUY_CLICK_BOOST:
+                                                continue
+
+                                            click_price: int | None = current_merge['price']
+
+                                            if new_balance >= click_price \
+                                                    and current_merge['max'] > current_merge['count']:
+                                                sleep_before_buy_merge: int = randint(
+                                                    a=config.SLEEP_BEFORE_BUY_MERGE[0],
+                                                    b=config.SLEEP_BEFORE_BUY_MERGE[1])
+                                                logger.info(
+                                                    f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
+                                                    f'перед покупкой Speed Boost')
+
+                                                await asyncio.sleep(delay=sleep_before_buy_merge)
+
+                                                if await self.buy_item(client=client,
+                                                                       item_id=3):
+                                                    logger.success(
+                                                        f'{self.session_name} | Успешно купил Click Boost')
+                                                    continue
+
+                                        case 4:
+                                            ...
+
+                        free_daily_turbo, free_daily_full_energy = await self.get_free_buffs_data(client=client)
+
+                        if config.SLEEP_BY_MIN_COINS:
+                            if available_coins:
+                                min_available_coins = config.MIN_AVAILABLE_COINS
+
+                                if available_coins < min_available_coins:
+                                    sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
+
+                                    logger.info(
+                                        f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
+                                    logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
+
+                                    await asyncio.sleep(delay=sleep_time_to_min_coins)
+
+                                    logger.info(f"{self.session_name} | Продолжаю кликать!")
+
+                                    if free_daily_full_energy:
+                                        random_sleep_time: int = randint(
+                                            a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                            b=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+
+                                        logger.info(
+                                            f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
+                                            f'ежедневного Full Energy')
+
+                                        await asyncio.sleep(delay=random_sleep_time)
+
+                                        if await self.activate_task(client=client,
+                                                                    task_id=2):
+                                            logger.success(
+                                                f'{self.session_name} | Успешно запросил ежедневный Full Energy')
+
+                                    continue
+
+                        if free_daily_turbo:
+                            random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                                             b=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+
+                            logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед запросом '
+                                        f'ежедневного Turbo')
+
+                            await asyncio.sleep(delay=random_sleep_time)
+
+                            if await self.activate_task(client=client,
+                                                        task_id=3):
+                                logger.success(f'{self.session_name} | Успешно запросил ежедневное Turbo')
+
                                 random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_TURBO[0],
                                                                  b=config.SLEEP_BEFORE_ACTIVATE_TURBO[1])
 
@@ -533,179 +639,40 @@ class Farming:
                                 else:
                                     turbo_multiplier: int = 1
 
-                            if config.SLEEP_BY_MIN_COINS:
-                                if available_coins:
-                                    min_available_coins = config.MIN_AVAILABLE_COINS
+                    except InvalidSession as error:
+                        raise error
 
-                                    if available_coins < min_available_coins:
-                                        sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
+                    except Exception as error:
+                        logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
 
-                                        logger.info(f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
-                                        logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
+                        random_sleep_time: int = randint(a=config.SLEEP_BETWEEN_CLICK[0],
+                                                         b=config.SLEEP_BETWEEN_CLICK[1])
 
-                                        await asyncio.sleep(delay=sleep_time_to_min_coins)
+                        logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
+                        await asyncio.sleep(delay=random_sleep_time)
 
-                                        logger.info(f"{self.session_name} | Продолжаю кликать!")
-                                        continue
+                    else:
+                        random_sleep_time: int = randint(a=config.SLEEP_BETWEEN_CLICK[0],
+                                                         b=config.SLEEP_BETWEEN_CLICK[1])
 
-                            if new_balance:
-                                merged_data: dict | None = await self.get_merged_list(client=client)
-
-                                if merged_data:
-                                    for current_merge in merged_data['data']:
-                                        match current_merge['id']:
-                                            case 1:
-                                                if not config.AUTO_BUY_ENERGY_BOOST:
-                                                    continue
-
-                                                energy_price: int | None = current_merge['price']
-
-                                                if new_balance >= energy_price \
-                                                        and current_merge['max'] > current_merge['count']:
-                                                    sleep_before_buy_merge: int = randint(
-                                                        a=config.SLEEP_BEFORE_BUY_MERGE[0],
-                                                        b=config.SLEEP_BEFORE_BUY_MERGE[1]
-                                                    )
-                                                    logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
-                                                                f'сек. перед покупкой Energy Boost')
-
-                                                    await asyncio.sleep(delay=sleep_before_buy_merge)
-
-                                                    if await self.buy_item(client=client,
-                                                                           item_id=1):
-                                                        logger.success(f'{self.session_name} | Успешно купил Energy '
-                                                                       'Boost')
-                                                        continue
-
-                                            case 2:
-                                                if not config.AUTO_BUY_SPEED_BOOST:
-                                                    continue
-
-                                                speed_price: int | None = current_merge['price']
-
-                                                if new_balance >= speed_price \
-                                                        and current_merge['max'] > current_merge['count']:
-                                                    sleep_before_buy_merge: int = randint(
-                                                        a=config.SLEEP_BEFORE_BUY_MERGE[0],
-                                                        b=config.SLEEP_BEFORE_BUY_MERGE[1]
-                                                    )
-                                                    logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
-                                                                'сек. перед покупкой Speed Boost')
-
-                                                    await asyncio.sleep(delay=sleep_before_buy_merge)
-
-                                                    if await self.buy_item(client=client,
-                                                                           item_id=2):
-                                                        logger.success(
-                                                            f'{self.session_name} | Успешно купил Speed Boost')
-                                                        continue
-
-                                            case 3:
-                                                if not config.AUTO_BUY_CLICK_BOOST:
-                                                    continue
-
-                                                click_price: int | None = current_merge['price']
-
-                                                if new_balance >= click_price \
-                                                        and current_merge['max'] > current_merge['count']:
-                                                    sleep_before_buy_merge: int = randint(
-                                                        a=config.SLEEP_BEFORE_BUY_MERGE[0],
-                                                        b=config.SLEEP_BEFORE_BUY_MERGE[1])
-                                                    logger.info(
-                                                        f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
-                                                        f'перед покупкой Speed Boost')
-
-                                                    await asyncio.sleep(delay=sleep_before_buy_merge)
-
-                                                    if await self.buy_item(client=client,
-                                                                           item_id=3):
-                                                        logger.success(
-                                                            f'{self.session_name} | Успешно купил Click Boost')
-                                                        continue
-
-                                            case 4:
-                                                pass
-
-                            free_daily_turbo, free_daily_full_energy = await self.get_free_buffs_data(client=client)
-
-                            if free_daily_turbo:
-                                random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                                                 b=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
-
-                                logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед запросом '
-                                            f'ежедневного Turbo')
-
-                                await asyncio.sleep(delay=random_sleep_time)
-
-                                if await self.activate_task(client=client,
-                                                            task_id=3):
-                                    logger.success(f'{self.session_name} | Успешно запросил ежедневное Turbo')
-
-                                    random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_TURBO[0],
-                                                                     b=config.SLEEP_BEFORE_ACTIVATE_TURBO[1])
-
-                                    logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
-                                                f'Turbo')
-
-                                    await asyncio.sleep(delay=random_sleep_time)
-
-                                    turbo_multiplier: int | None = await self.activate_turbo(client=client)
-
-                                    if turbo_multiplier:
-                                        logger.success(f'{self.session_name} | Успешно активировал Turbo: '
-                                                       f'x{turbo_multiplier}')
-                                        active_turbo: bool = True
-                                        continue
-
-                                    else:
-                                        turbo_multiplier: int = 1
-
-                            elif free_daily_full_energy:
-                                random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                                                 b=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
-
-                                logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
-                                            f'ежедневного Full Energy')
-
-                                await asyncio.sleep(delay=random_sleep_time)
-
-                                if await self.activate_task(client=client,
-                                                            task_id=2):
-                                    logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
-
-                        except InvalidSession as error:
-                            raise error
-
-                        except Exception as error:
-                            logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
-
-                            random_sleep_time: int = randint(a=config.SLEEP_BETWEEN_CLICK[0],
-                                                             b=config.SLEEP_BETWEEN_CLICK[1])
-
-                            logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
-                            await asyncio.sleep(delay=random_sleep_time)
-
-                        else:
-                            random_sleep_time: int = randint(a=config.SLEEP_BETWEEN_CLICK[0],
-                                                             b=config.SLEEP_BETWEEN_CLICK[1])
-
-                            logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
-                            await asyncio.sleep(delay=random_sleep_time)
+                        logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
+                        await asyncio.sleep(delay=random_sleep_time)
 
             except InvalidSession as error:
+                await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
                 raise error
 
             except Exception as error:
+                await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
+
                 logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
+                await asyncio.sleep(delay=2)
 
 
 async def start_farming(session_name: str,
-                        proxy: str | None = None) -> None:
+                        client: Client,
+                        proxy: str | None = None, ) -> None:
     try:
-        await Farming(session_name=session_name).start_farming(proxy=proxy)
-
-        with suppress(KeyboardInterrupt, SystemExit):
-            logger.info('Остановка бота...')
-
+        await Farming(session_name=session_name, client=client).run(proxy=proxy)
     except InvalidSession:
         logger.error(f'{session_name} | Invalid Session')
