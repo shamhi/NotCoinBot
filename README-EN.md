@@ -67,5 +67,6 @@ You can also use arguments for quick launch, for example:
 ~/NotCoinBot >>> python3 main.py -a (1/2)
 
 # 1 - Launches session registrar
-# 2 - Launches all saved sessions
+# 2 - Launches with the ability to control via telegram
+# 3 - Launches without the ability to control via telegram
 ```

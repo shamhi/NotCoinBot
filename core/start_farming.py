@@ -10,7 +10,7 @@ import aiohttp
 from aiohttp_proxy import ProxyConnector
 from loguru import logger
 from pyrogram import Client
-from pyrogram.raw import functions as p_functions
+from pyrogram.raw import functions
 
 from data import config
 from database import actions as db_actions
@@ -83,7 +83,7 @@ class Farming:
                     await self.client.connect()
 
                 web_view = await self.client.invoke(
-                    p_functions.messages.RequestWebView(
+                    functions.messages.RequestWebView(
                         peer=await self.client.resolve_peer('notcoin_bot'),
                         bot=await self.client.resolve_peer('notcoin_bot'),
                         platform='android',
