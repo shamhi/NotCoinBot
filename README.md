@@ -43,7 +43,7 @@
 
 ## Установка
 Вы можете скачать [**Репозиторий**](https://github.com/shamhi/NotCoinBot) клонированием на вашу систему и установкой необходимых зависимостей:
-```
+```shell
 ~ >>> git clone https://github.com/shamhi/NotCoinBot.git 
 ~ >>> cd NotCoinBot.git
 
@@ -61,7 +61,7 @@
 ```
 
 Также для быстрого запуска вы можете использовать аргументы, например:
-```
+```shell
 ~/NotCoinBot >>> python3 main.py --action (1/2)
 # Или
 ~/NotCoinBot >>> python3 main.py -a (1/2)
@@ -69,4 +69,26 @@
 # 1 - Запускает регистратор сессии
 # 2 - Запускает с возможностью управления через телеграмм
 # 3 - Запускает без возможности управления через телеграмм
+```
+
+## Docker
+Ручная установка:
+```shell
+# Создание образа
+~/NotCoinBot >>> docker build -t notcoin_image .
+
+# Запуск в интерактивном режиме
+~/NotCoinBot >>> docker run --name notcoin_app -it notcoin_image
+
+# Запуск в режиме демона
+~/NotCoinBot >>> docker run --name notcoin_app -d notcoin_image
+```
+
+Установка через docker-compose:
+```shell
+# Запуск в интерактивном режиме
+~/NotCoinBot >>> docker-compose up
+
+# Запуск в режиме демона
+~/NotCoinBot >>> docker-compose up -d
 ```
