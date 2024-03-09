@@ -445,7 +445,7 @@ class Farming:
 
                             if status_code == 400:
                                 logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
-                                await asyncio.sleep(delay=15)
+                                await asyncio.sleep(delay=25)
 
                                 await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
                                 access_token_created_time = 0
