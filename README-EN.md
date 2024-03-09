@@ -70,3 +70,25 @@ You can also use arguments for quick launch, for example:
 # 2 - Launches with the ability to control via telegram
 # 3 - Launches without the ability to control via telegram
 ```
+
+## Docker
+Manual installation:
+```shell
+# Creating an image
+~/NotCoinBot >>> docker build -t notcoin_image .
+
+# Run interactively
+~/NotCoinBot >>> docker run --name notcoin_app -it notcoin_image
+
+# Running in daemon mode
+~/NotCoinBot >>> docker run --name notcoin_app -d notcoin_image
+```
+
+Installation via docker-compose:
+```shell
+# Run interactively
+~/NotCoinBot >>> docker-compose up
+
+# Running in daemon mode
+~/NotCoinBot >>> docker-compose up -d
+```
