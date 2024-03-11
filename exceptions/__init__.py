@@ -1,6 +1,14 @@
 class InvalidSession(BaseException):
-    pass
+    ...
 
 
 class TurboExpired(BaseException):
-    pass
+    ...
+
+
+class BadRequestStatus(BaseException):
+    ...
+
+
+class ForbiddenStatus(BaseException):
+    ...

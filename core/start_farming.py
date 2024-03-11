@@ -14,7 +14,7 @@ from pyrogram.raw import functions
 
 from data import config
 from database import actions as db_actions
-from exceptions import InvalidSession, TurboExpired
+from exceptions import InvalidSession, TurboExpired, BadRequestStatus, ForbiddenStatus
 from utils import eval_js, scripts
 from .headers import headers, option_headers
 
@@ -450,7 +450,7 @@ class Farming:
                                 await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
                                 access_token_created_time = 0
 
-                                break
+                                raise BadRequestStatus()
 
                             if status_code == 403:
                                 logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
@@ -460,7 +460,7 @@ class Farming:
                                 await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
                                 access_token_created_time = 0
 
-                                break
+                                raise ForbiddenStatus()
 
                             if not str(status_code).startswith('2'):
                                 logger.error(f"{self.session_name} | Неизвестный статус ответа: {status_code}")
@@ -673,6 +673,10 @@ async def start_farming(session_name: str,
                         client: Client,
                         proxy: str | None = None, ) -> None:
     try:
+        await Farming(session_name=session_name, client=client).run(proxy=proxy)
+    except BadRequestStatus:
+        await Farming(session_name=session_name, client=client).run(proxy=proxy)
+    except ForbiddenStatus:
         await Farming(session_name=session_name, client=client).run(proxy=proxy)
     except InvalidSession:
         logger.error(f'{session_name} | Invalid Session')
