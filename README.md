@@ -12,7 +12,7 @@
 + _Рандомное количество кликов за запрос_
 + _Поддержка tdata / pyrogram .session / telethon .session_
 
-## [Настройки](https://github.com/shamhi/NotCoinBot/blob/main/data/config.py">)
+## [Настройки](https://github.com/shamhi/NotCoinBot/blob/main/data/config.py)
 + **API_ID / API_HASH** - Данные платформы, с которой запускать сессию Telegram (сток - Android)
 ***
 + **MIN_CLICKS_COUNT** - Минимальное количество кликов за один запрос (считается без множителя, т.е напр. при множителе x9: 1 клик будет равнятся 9 монетам, а не одной)
