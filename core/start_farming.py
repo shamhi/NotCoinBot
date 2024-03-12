@@ -579,16 +579,6 @@ class Farming:
                                 min_available_coins = config.MIN_AVAILABLE_COINS
 
                                 if available_coins < min_available_coins:
-                                    sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
-
-                                    logger.info(
-                                        f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
-                                    logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
-
-                                    await asyncio.sleep(delay=sleep_time_to_min_coins)
-
-                                    logger.info(f"{self.session_name} | Продолжаю кликать!")
-
                                     if free_daily_full_energy:
                                         random_sleep_time: int = randint(
                                             a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
@@ -604,6 +594,18 @@ class Farming:
                                                                     task_id=2):
                                             logger.success(
                                                 f'{self.session_name} | Успешно запросил ежедневный Full Energy')
+
+                                            continue
+
+                                    sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
+
+                                    logger.info(
+                                        f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
+                                    logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
+
+                                    await asyncio.sleep(delay=sleep_time_to_min_coins)
+
+                                    logger.info(f"{self.session_name} | Продолжаю кликать!")
 
                                     continue
 
@@ -674,9 +676,7 @@ async def start_farming(session_name: str,
                         proxy: str | None = None, ) -> None:
     try:
         await Farming(session_name=session_name, client=client).run(proxy=proxy)
-    except BadRequestStatus:
-        await Farming(session_name=session_name, client=client).run(proxy=proxy)
-    except ForbiddenStatus:
-        await Farming(session_name=session_name, client=client).run(proxy=proxy)
+    except (BadRequestStatus, ForbiddenStatus):
+        await start_farming(session_name=session_name, client=client, proxy=proxy)
     except InvalidSession:
         logger.error(f'{session_name} | Invalid Session')
