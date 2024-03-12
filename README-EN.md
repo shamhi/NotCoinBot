@@ -45,7 +45,7 @@
 You can download the [**Git Repo**](https://github.com/shamhi/NotCoinBot) by cloning on your system and installing its requirements:
 ```
 ~ >>> git clone https://github.com/shamhi/NotCoinBot.git 
-~ >>> cd NotCoinBot.git
+~ >>> cd NotCoinBot
 
 # Linux
 ~/NotCoinBot >>> python3 -m venv venv
