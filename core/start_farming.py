@@ -20,12 +20,20 @@ from .headers import headers, option_headers
 
 
 class TLSv1_3_BYPASS:
-    CIPHERS = "TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:ECDHE-RSA-AES128-SHA:ECDHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA:AES256-SHA:DES-CBC3-SHA"
+    CIPHERS = [
+        "ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-RSA-AES128-GCM-SHA256",
+        "ECDHE-ECDSA-AES256-GCM-SHA384", "ECDHE-RSA-AES256-GCM-SHA384",
+        "ECDHE-ECDSA-CHACHA20-POLY1305", "ECDHE-RSA-CHACHA20-POLY1305",
+        "ECDHE-RSA-AES128-SHA", "ECDHE-RSA-AES256-SHA",
+        "AES128-GCM-SHA256", "AES256-GCM-SHA384", "AES128-SHA", "AES256-SHA", "DES-CBC3-SHA",
+        "TLS_AES_128_GCM_SHA256", "TLS_AES_256_GCM_SHA384", "TLS_CHACHA20_POLY1305_SHA256",
+        "TLS_AES_128_CCM_SHA256", "TLS_AES_256_CCM_8_SHA256"
+    ]
 
     @staticmethod
     def create_ssl_context():
         ssl_context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
-        ssl_context.set_ciphers(TLSv1_3_BYPASS.CIPHERS)
+        ssl_context.set_ciphers(':'.join(TLSv1_3_BYPASS.CIPHERS))
         ssl_context.set_ecdh_curve("prime256v1")
         ssl_context.minimum_version = ssl.TLSVersion.TLSv1_3
         ssl_context.maximum_version = ssl.TLSVersion.TLSv1_3
@@ -63,7 +71,7 @@ class Farming:
                 else:
                     logger.error(f'{self.session_name} | Неизвестная ошибка при получении Access Token: {error}')
 
-                await asyncio.sleep(delay=2)
+                await asyncio.sleep(delay=3)
 
     async def get_tg_web_data(self,
                               session_proxy: str | None) -> str | None:
@@ -111,7 +119,7 @@ class Farming:
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при авторизации: {error}')
-                await asyncio.sleep(delay=2)
+                await asyncio.sleep(delay=3)
 
     async def get_profile_data(self,
                                client: aiohttp.ClientSession) -> dict:
@@ -119,7 +127,7 @@ class Farming:
             try:
                 r: aiohttp.ClientResponse = await client.get(
                     url='https://clicker-api.joincommunity.xyz/clicker/profile',
-                    verify_ssl=False)
+                    ssl=True)
 
                 status_code = r.status
                 try:
@@ -127,14 +135,14 @@ class Farming:
                 except:
                     logger.error(f'{self.session_name} | Неизвестный ответ при получении данных профиля | '
                                  f'Статус: {status_code} | Ответ: {await r.text()}')
-                    await asyncio.sleep(delay=2)
+                    await asyncio.sleep(delay=3)
                     continue
 
                 return await r.json(content_type=None)
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при получении данных профиля: {error}')
-                await asyncio.sleep(delay=2)
+                await asyncio.sleep(delay=3)
 
     async def send_clicks(self,
                           client: aiohttp.ClientSession,
@@ -162,14 +170,12 @@ class Farming:
 
                 await opt_client.options(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
-                    json=json_data,
-                    timeout=10)
+                    json=json_data)
 
                 r: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     json=json_data,
-                    timeout=10,
-                    verify_ssl=False)
+                    ssl=True)
 
                 status_code = r.status
                 if not str(status_code).startswith('2'):
@@ -185,7 +191,7 @@ class Farming:
                 if response_json.get('data') \
                         and isinstance(response_json['data'], dict) \
                         and response_json['data'].get('message', '') == 'Try later':
-                    await asyncio.sleep(delay=1)
+                    await asyncio.sleep(delay=3)
                     continue
 
                 if response_json.get('ok'):
@@ -204,7 +210,7 @@ class Farming:
 
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при попытке сделать Click: {error}')
-                await asyncio.sleep(delay=2)
+                await asyncio.sleep(delay=3)
 
     async def get_merged_list(self,
                               client: aiohttp.ClientSession) -> dict | None:
@@ -229,7 +235,7 @@ class Farming:
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при получении списка товаров: {error}')
 
-            await asyncio.sleep(delay=2)
+            await asyncio.sleep(delay=3)
 
     async def buy_item(self,
                        client: aiohttp.ClientSession,
@@ -259,7 +265,7 @@ class Farming:
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при покупке в магазине: {error}')
 
-            await asyncio.sleep(delay=2)
+            await asyncio.sleep(delay=3)
             return False
 
     async def activate_turbo(self,
@@ -284,7 +290,7 @@ class Farming:
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при активации Turbo: {error}')
 
-            await asyncio.sleep(delay=2)
+            await asyncio.sleep(delay=3)
             return
 
     async def activate_task(self,
@@ -315,7 +321,7 @@ class Farming:
             else:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при активации Task {task_id}: {error}')
 
-            await asyncio.sleep(delay=2)
+            await asyncio.sleep(delay=3)
             return False
 
     async def get_free_buffs_data(self,
@@ -356,7 +362,7 @@ class Farming:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при получении статуса бесплатных баффов: '
                              f'{error}')
 
-            await asyncio.sleep(delay=2)
+            await asyncio.sleep(delay=3)
             return False, False
 
     @staticmethod
@@ -445,7 +451,7 @@ class Farming:
 
                             if status_code == 400:
                                 logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
-                                await asyncio.sleep(delay=25)
+                                await asyncio.sleep(delay=35)
 
                                 await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
                                 access_token_created_time = 0
@@ -668,7 +674,7 @@ class Farming:
                 await self.close_connectors(client, opt_client, ssl_conn, proxy_conn)
 
                 logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
-                await asyncio.sleep(delay=2)
+                await asyncio.sleep(delay=3)
 
 
 async def start_farming(session_name: str,
