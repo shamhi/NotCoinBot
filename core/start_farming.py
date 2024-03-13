@@ -105,7 +105,6 @@ class Farming:
 
                 auth_url = web_view.url
 
-
                 tg_web_data: str = unquote(string=unquote(
                     string=auth_url.split(sep='tgWebAppData=',
                                           maxsplit=1)[1].split(sep='&tgWebAppVersion',
