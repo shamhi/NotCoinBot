@@ -21,9 +21,15 @@
 ***
 + **AUTO_BUY_ENERGY_BOOST** - Автоматическая покупка Energy Boost при достижении баланса (True / False)
 ***
++ **MAX_ENERGY_BOOST** - Максимальный уровень улучшения Energy Boost (напр. 10)
+***
 + **AUTO_BUY_SPEED_BOOST** - Автоматическая покупка Speed Boost при достижении баланса (True / False)
 ***
++ **MAX_SPEED_BOOST** - Максимальный уровень улучшения Speed Boost (напр. 10)
+***
 + **AUTO_BUY_CLICK_BOOST** - Автоматическая покупка Click Boost при достижении баланса (True / False)
+***
++ **MAX_CLICK_BOOST** - Максимальный уровень улучшения Click Boost (напр. 10)
 ***
 + **SLEEP_BY_MIN_COINS** - Использовать-ли задержку при достижении минимального количества коинов (True / False)
 ***

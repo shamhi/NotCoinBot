@@ -21,9 +21,15 @@
 ***
 + **AUTO_BUY_ENERGY_BOOST** - Automatic purchase of Energy Boost when balance is reached (True / False)
 ***
++ **MAX_ENERGY_BOOST** - Max lvl Energy Boost (e.g. 10)
+***
 + **AUTO_BUY_SPEED_BOOST** - Automatic purchase of Speed Boost when balance is reached (True / False)
 ***
++ **MAX_SPEED_BOOST** - Max lvl Speed Boost (e.g. 10)
+***
 + **AUTO_BUY_CLICK_BOOST** - Automatic purchase of Click Boost when balance is reached (True / False)
+***
++ **MAX_CLICK_BOOST** - Max lvl Click Boost (e.g. 10)
 ***
 + **SLEEP_BY_MIN_COINS** - Use delay when minimum number of coins is reached (True / False)
 ***

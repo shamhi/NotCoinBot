@@ -104,6 +104,7 @@ class Farming:
                     await self.client.disconnect()
 
                 auth_url = web_view.url
+                # logger.info(f'{self.session_name} {auth_url}')
 
                 tg_web_data: str = unquote(string=unquote(
                     string=auth_url.split(sep='tgWebAppData=',
@@ -510,6 +511,11 @@ class Farming:
                                                 continue
 
                                             energy_price: int | None = current_merge['price']
+                                            energy_count: int | None = current_merge['count']
+
+                                            if energy_count >= config.MAX_ENERGY_BOOST:
+                                                logger.info(f'{self.session_name} | Energy Boost {energy_count} lvl')
+                                                continue
 
                                             if new_balance >= energy_price \
                                                     and current_merge['max'] > current_merge['count']:
@@ -533,6 +539,11 @@ class Farming:
                                                 continue
 
                                             speed_price: int | None = current_merge['price']
+                                            speed_count: int | None = current_merge['count']
+
+                                            if speed_count >= config.MAX_SPEED_BOOST:
+                                                logger.info(f'{self.session_name} | Speed Boost {speed_count} lvl')
+                                                continue
 
                                             if new_balance >= speed_price \
                                                     and current_merge['max'] > current_merge['count']:
@@ -556,6 +567,11 @@ class Farming:
                                                 continue
 
                                             click_price: int | None = current_merge['price']
+                                            click_count: int | None = current_merge['count']
+
+                                            if click_count >= config.MAX_CLICK_BOOST:
+                                                logger.info(f'{self.session_name} | Click Booster {click_count} lvl')
+                                                continue
 
                                             if new_balance >= click_price \
                                                     and current_merge['max'] > current_merge['count']:
@@ -564,7 +580,7 @@ class Farming:
                                                     b=config.SLEEP_BEFORE_BUY_MERGE[1])
                                                 logger.info(
                                                     f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
-                                                    f'перед покупкой Speed Boost')
+                                                    f'перед покупкой Click Booster')
 
                                                 await asyncio.sleep(delay=sleep_before_buy_merge)
 
