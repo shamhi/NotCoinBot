@@ -514,7 +514,6 @@ class Farming:
                                             energy_count: int | None = current_merge['count']
 
                                             if energy_count >= config.MAX_ENERGY_BOOST:
-                                                logger.info(f'{self.session_name} | Energy Boost {energy_count} lvl')
                                                 continue
 
                                             if new_balance >= energy_price \
@@ -523,6 +522,7 @@ class Farming:
                                                     a=config.SLEEP_BEFORE_BUY_MERGE[0],
                                                     b=config.SLEEP_BEFORE_BUY_MERGE[1]
                                                 )
+                                                logger.info(f'{self.session_name} | Улучшаем Energy Boost до {energy_count + 1} lvl')
                                                 logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
                                                             f'сек. перед покупкой Energy Boost')
 
@@ -542,7 +542,6 @@ class Farming:
                                             speed_count: int | None = current_merge['count']
 
                                             if speed_count >= config.MAX_SPEED_BOOST:
-                                                logger.info(f'{self.session_name} | Speed Boost {speed_count} lvl')
                                                 continue
 
                                             if new_balance >= speed_price \
@@ -551,6 +550,7 @@ class Farming:
                                                     a=config.SLEEP_BEFORE_BUY_MERGE[0],
                                                     b=config.SLEEP_BEFORE_BUY_MERGE[1]
                                                 )
+                                                logger.info(f'{self.session_name} | Улучшаем Speed Boost до {speed_count + 1} lvl')
                                                 logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
                                                             'сек. перед покупкой Speed Boost')
 
@@ -570,7 +570,6 @@ class Farming:
                                             click_count: int | None = current_merge['count']
 
                                             if click_count >= config.MAX_CLICK_BOOST:
-                                                logger.info(f'{self.session_name} | Click Booster {click_count} lvl')
                                                 continue
 
                                             if new_balance >= click_price \
@@ -578,6 +577,7 @@ class Farming:
                                                 sleep_before_buy_merge: int = randint(
                                                     a=config.SLEEP_BEFORE_BUY_MERGE[0],
                                                     b=config.SLEEP_BEFORE_BUY_MERGE[1])
+                                                logger.info(f'{self.session_name} | Улучшаем Click Booster до {click_count + 1} lvl')
                                                 logger.info(
                                                     f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
                                                     f'перед покупкой Click Booster')
