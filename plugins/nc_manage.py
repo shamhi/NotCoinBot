@@ -4,7 +4,7 @@ from pyrogram.raw.functions.messages import RequestWebView
 
 from utils import launch, scripts
 from utils.emojis import rwarning, rdeny, rcheck
-from utils.launch_farming import clients
+from utils.launch import clients
 
 
 
@@ -38,15 +38,17 @@ async def launch_farming(client: Client, message: Message):
     elif flag in flags_to_stop:
         status = await scripts.stop_task(client=client)
         await message.edit(status)
-
-
-@Client.on_message(filters.me & filters.chat('me') & filters.command('balance'))
-async def send_my_balance(client: Client, message: Message):
-    ...
+    else:
+        await message.edit(f"{rdeny()}This command only accept the values 'on', 'off', 'start', 'stop'")
 
 
 @Client.on_message(filters.me & filters.chat('me') & filters.command('help', prefixes='/'))
 async def send_help_text(client: Client, message: Message):
+    await message.edit('Launch: <code>/farm on</code>\nStop: <code>/farm off</code>')
+
+
+@Client.on_message(filters.me & filters.chat('me') & filters.command('balance'))
+async def send_my_balance(client: Client, message: Message):
     ...
 
 

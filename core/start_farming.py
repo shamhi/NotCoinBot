@@ -104,7 +104,7 @@ class Farming:
                     await self.client.disconnect()
 
                 auth_url = web_view.url
-
+                # logger.info(f'{self.session_name} {auth_url}')
 
                 tg_web_data: str = unquote(string=unquote(
                     string=auth_url.split(sep='tgWebAppData=',
@@ -511,6 +511,10 @@ class Farming:
                                                 continue
 
                                             energy_price: int | None = current_merge['price']
+                                            energy_count: int | None = current_merge['count']
+
+                                            if energy_count >= config.MAX_ENERGY_BOOST:
+                                                continue
 
                                             if new_balance >= energy_price \
                                                     and current_merge['max'] > current_merge['count']:
@@ -518,6 +522,7 @@ class Farming:
                                                     a=config.SLEEP_BEFORE_BUY_MERGE[0],
                                                     b=config.SLEEP_BEFORE_BUY_MERGE[1]
                                                 )
+                                                logger.info(f'{self.session_name} | Улучшаем Energy Boost до {energy_count + 1} lvl')
                                                 logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
                                                             f'сек. перед покупкой Energy Boost')
 
@@ -534,6 +539,10 @@ class Farming:
                                                 continue
 
                                             speed_price: int | None = current_merge['price']
+                                            speed_count: int | None = current_merge['count']
+
+                                            if speed_count >= config.MAX_SPEED_BOOST:
+                                                continue
 
                                             if new_balance >= speed_price \
                                                     and current_merge['max'] > current_merge['count']:
@@ -541,6 +550,7 @@ class Farming:
                                                     a=config.SLEEP_BEFORE_BUY_MERGE[0],
                                                     b=config.SLEEP_BEFORE_BUY_MERGE[1]
                                                 )
+                                                logger.info(f'{self.session_name} | Улучшаем Speed Boost до {speed_count + 1} lvl')
                                                 logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} '
                                                             'сек. перед покупкой Speed Boost')
 
@@ -557,15 +567,20 @@ class Farming:
                                                 continue
 
                                             click_price: int | None = current_merge['price']
+                                            click_count: int | None = current_merge['count']
+
+                                            if click_count >= config.MAX_CLICK_BOOST:
+                                                continue
 
                                             if new_balance >= click_price \
                                                     and current_merge['max'] > current_merge['count']:
                                                 sleep_before_buy_merge: int = randint(
                                                     a=config.SLEEP_BEFORE_BUY_MERGE[0],
                                                     b=config.SLEEP_BEFORE_BUY_MERGE[1])
+                                                logger.info(f'{self.session_name} | Улучшаем Click Booster до {click_count + 1} lvl')
                                                 logger.info(
                                                     f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
-                                                    f'перед покупкой Speed Boost')
+                                                    f'перед покупкой Click Booster')
 
                                                 await asyncio.sleep(delay=sleep_before_buy_merge)
 

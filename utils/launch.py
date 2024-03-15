@@ -107,7 +107,6 @@ async def launch(clients: list[Client]):
     proxies = get_proxies()
     proxies_cycled = cycle(proxies) if proxies else None
 
-
     tasks: list = [
         asyncio.create_task(coro=start_farming(session_name=current_session_name,
                                                client=client,
