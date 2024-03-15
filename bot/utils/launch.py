@@ -1,4 +1,5 @@
 import os
+import glob
 import asyncio
 import argparse
 from itertools import cycle
@@ -7,27 +8,23 @@ from pyrogram import Client, compose
 from better_proxy import Proxy
 from loguru._logger import Logger
 
-from core import start_farming, create_sessions
-from database import get_session_names
-from data import config
+from bot.core import run_clicker, create_sessions
+from bot.config import config
 
 
 clients = []
 
 
 def get_session_files():
-    session_files: list[str] = [
-        current_file[:-8] if current_file.endswith('.session')
-        else current_file for current_file in os.listdir(path='sessions/')
-        if current_file.endswith('.session') or os.path.isdir(s=f'sessions/{current_file}')
-    ]
+    session_files = glob.glob('sessions/*.session')
+    session_files = [os.path.splitext(os.path.basename(file))[0] for file in session_files]
 
     return session_files
 
 
 def get_proxies():
     if config.USE_PROXY_FROM_FILE:
-        with open(file='data/proxies.txt',
+        with open(file='bot/config/proxies.txt',
                   mode='r',
                   encoding='utf-8-sig') as file:
             proxies: list[str] = [Proxy.from_str(proxy=row.strip()).as_url for row in file]
@@ -37,7 +34,7 @@ def get_proxies():
     return proxies
 
 
-async def launch_process(logger: Logger):
+async def start_process(logger: Logger):
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', type=int, help='Action to perform')
 
@@ -48,7 +45,7 @@ async def launch_process(logger: Logger):
 
     logger.info(f'Обнаружено {len(session_files)} сессий / {len(proxies)} прокси')
 
-    await asyncio.sleep(delay=1)
+    await asyncio.sleep(delay=.25)
 
     user_action: int = args.action if args.action else int(input(
         '\n1. Создать сессию'
@@ -60,18 +57,13 @@ async def launch_process(logger: Logger):
 
     match user_action:
         case 1:
-            sessions = await create_sessions()
-
-            if sessions:
-                logger.success('Сессии успешно добавлены')
-            else:
-                logger.warning('Отмена')
+            await create_sessions()
 
         case 2:
             if not session_files:
                 raise FileNotFoundError("Not found session files")
 
-            logger.info(f'Бот запущен на {len(session_files)} сессиях. '
+            logger.info(f'Бот запущен на {len(session_files)} сессиях.\n'
                         f'Отправьте /help в чате Избранное/Saved Messages \n')
 
             global clients
@@ -81,12 +73,15 @@ async def launch_process(logger: Logger):
                 api_id=config.API_ID,
                 api_hash=config.API_HASH,
                 workdir='sessions/',
-                plugins=dict(root='plugins')
-            ) async for name in get_session_names()]
+                plugins=dict(root='bot/plugins')
+            ) for name in session_files]
 
             await compose(clients)
 
         case 3:
+            if not session_files:
+                raise FileNotFoundError("Not found session files")
+
             logger.info(f'Бот запущен без возможности управления через телеграмм \n')
 
             clients = [Client(
@@ -94,23 +89,25 @@ async def launch_process(logger: Logger):
                 api_id=config.API_ID,
                 api_hash=config.API_HASH,
                 workdir='sessions/',
-                plugins=dict(root='plugins')
-            ) async for name in get_session_names()]
+                plugins=dict(root='bot/plugins')
+            ) for name in session_files]
 
-            await launch(clients=clients)
+            await run_tasks(clients=clients)
+
         case _:
             logger.error('Действие выбрано некорректно')
 
 
-async def launch(clients: list[Client]):
+async def run_tasks(clients: list[Client]):
     session_files = get_session_files()
     proxies = get_proxies()
     proxies_cycled = cycle(proxies) if proxies else None
 
     tasks: list = [
-        asyncio.create_task(coro=start_farming(session_name=current_session_name,
-                                               client=client,
-                                               proxy=next(proxies_cycled) if proxies_cycled else None))
+        asyncio.create_task(
+            coro=run_clicker(session_name=current_session_name,
+                             client=client,
+                             proxy=next(proxies_cycled) if proxies_cycled else None))
         for client, current_session_name in zip(clients, session_files)
     ]
 

@@ -1,12 +1,11 @@
 import asyncio
-import logging
 import contextlib
 from sys import stderr
 
 from loguru import logger
 
-from database import on_startup_database
-from utils import launch_process
+from bot.db.manager import Database
+from bot.utils import start_process
 
 
 logger.remove()
@@ -16,13 +15,15 @@ logger.add(stderr, format='<white>{time:HH:mm:ss}</white>'
                           ' - <white>{message}</white>')
 
 async def main() -> None:
-    await on_startup_database()
+    # Database on_startup
 
-    await launch_process(logger=logger)
+    await start_process(logger=logger)
 
 
 if __name__ == '__main__':
-    #logging.basicConfig(level=logging.INFO)
+    # import logging
+    # logging.basicConfig(level=logging.INFO)
+
     with contextlib.suppress(KeyboardInterrupt, SystemExit, UnicodeDecodeError, RuntimeError):
         asyncio.run(main())
 
