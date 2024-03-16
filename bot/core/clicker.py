@@ -531,7 +531,6 @@ class Clicker:
                                     if await self.activate_task(client=client, task_id=2):
                                         logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
 
-                                        await asyncio.sleep(delay=random_sleep_time)
                                         continue
 
                                 sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
