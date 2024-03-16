@@ -345,7 +345,7 @@ class Clicker:
 
                     if config.GET_BONUS_LEAGUE:
                         leagueId: int = profile_data['data'][0]['leagueId']
-                        totalCoins: int = profile_data['data'][0]['totalCoins']
+                        totalCoins: int = int(profile_data['data'][0]['totalCoins'])
 
                         if leagueId == 1 and totalCoins > 5_000:
                             await self.activate_task(client=client, task_id=7)
