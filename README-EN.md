@@ -27,6 +27,7 @@
 | **MAX_SPEED_BOOST**                  | Maximum level of Speed Boost upgrade (e.g., 10)                                                                                          |
 | **AUTO_BUY_CLICK_BOOST**             | Automatically buy Click Boost when the balance is reached (True / False)                                                                 |
 | **MAX_CLICK_BOOST**                  | Maximum level of Click Boost upgrade (e.g., 10)                                                                                          |
+| **GET_BONUS_LEAGUE**                  | Receive league bonus (True / False)                                                                                          |
 | **SLEEP_BY_MIN_COINS**               | Whether to use a delay when reaching the minimum amount of coins (True / False)                                                          |
 | **USE_PROXY_FROM_FILE**              | Whether to use Proxy from the `bot/config/proxies.txt` file for accounts not bound to Proxy (True / False)                               |
 | **SLEEP_BETWEEN_CLICK**              | Range of delay between clicks (in seconds)                                                                                               |

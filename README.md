@@ -27,6 +27,7 @@
 | **MAX_SPEED_BOOST**                  | Максимальный уровень улучшения Speed Boost (напр. 10)                                                                                           |
 | **AUTO_BUY_CLICK_BOOST**             | Автоматическая покупка Click Boost при достижении баланса (True / False)                                                                        |
 | **MAX_CLICK_BOOST**                  | Максимальный уровень улучшения Click Boost (напр. 10)                                                                                           |
+| **GET_BONUS_LEAGUE**                  | Получать бонус за лиги (True / False)                                                                                                           |
 | **SLEEP_BY_MIN_COINS**               | Использовать-ли задержку при достижении минимального количества коинов (True / False)                                                           |
 | **USE_PROXY_FROM_FILE**              | Использовать-ли Proxy из файла `bot/config/proxies.txt` для аккаунтов, к которым не привязаны Proxy (True / False)                              |
 | **SLEEP_BETWEEN_CLICK**              | Диапазон задержки между кликами (в секундах)                                                                                                    |
