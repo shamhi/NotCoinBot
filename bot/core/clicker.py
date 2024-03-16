@@ -143,7 +143,6 @@ class Clicker:
                     return status_code, None, None, None, None
 
                 response_json: dict = await response.json(content_type=None)
-                print(response_json)
 
                 if response_json.get('data') \
                         and isinstance(response_json['data'], dict) \
@@ -532,7 +531,6 @@ class Clicker:
                                     if await self.activate_task(client=client, task_id=2):
                                         logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
 
-                                        await asyncio.sleep(delay=10)
                                         continue
 
                                 sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
