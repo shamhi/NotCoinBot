@@ -2,7 +2,7 @@
 
 ![alt text](https://i.imgur.com/PDYwSJ9.png)
 
-> 🇪🇳 README in english available [here](README-EN.md)
+> 🇺🇸 README in english available [here](README-EN.md)
 
 ## Функционал  
 | Функционал                                         | Поддерживается      |

@@ -343,6 +343,19 @@ class Clicker:
 
                     profile_data: dict = await self.get_profile_data(client=client)
 
+                    if config.GET_BONUS_LEAGUE:
+                        leagueId: int = profile_data['data'][0]['leagueId']
+                        totalCoins: int = profile_data['data'][0]['totalCoins']
+
+                        if leagueId == 1 and totalCoins > 5_000:
+                            await self.activate_task(client=client, task_id=7)
+                        elif leagueId == 2 and totalCoins > 200_000:
+                            await self.activate_task(client=client, task_id=8)
+                        elif leagueId == 3 and totalCoins > 2_000_000:
+                            await self.activate_task(client=client, task_id=9)
+                        elif leagueId == 4 and totalCoins > 10_000_000:
+                            await self.activate_task(client=client, task_id=10)
+
                     if not active_turbo:
                         if config.MIN_CLICKS_COUNT > floor(profile_data['data'][0]['availableCoins'] /
                                                            profile_data['data'][0]['multipleClicks']):

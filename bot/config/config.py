@@ -18,12 +18,14 @@ API_HASH: str = config_data.get('API_HASH')
 MIN_CLICKS_COUNT: int = 5
 MIN_AVAILABLE_COINS: int = 200
 
-AUTO_BUY_ENERGY_BOOST: bool = False
+AUTO_BUY_ENERGY_BOOST: bool = True
 MAX_ENERGY_BOOST: int = 10
-AUTO_BUY_SPEED_BOOST: bool = False
+AUTO_BUY_SPEED_BOOST: bool = True
 MAX_SPEED_BOOST: int = 10
-AUTO_BUY_CLICK_BOOST: bool = False
+AUTO_BUY_CLICK_BOOST: bool = True
 MAX_CLICK_BOOST: int = 10
+
+GET_BONUS_LEAGUE: bool = True
 
 SLEEP_BY_MIN_COINS: bool = True
 
