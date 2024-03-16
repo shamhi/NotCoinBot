@@ -30,7 +30,7 @@ class Clicker:
                     url='https://clicker-api.joincommunity.xyz/auth/webapp-session',
                     json={'webAppData': tg_web_data})
 
-                response_json = await response.json()
+                response_json = await response.json(content_type=None)
                 return response_json['data']['accessToken']
 
             except Exception as error:
@@ -95,7 +95,7 @@ class Clicker:
 
                 status_code = response.status
                 try:
-                    response_json = await response.json()
+                    response_json = await response.json(content_type=None)
 
                 except:
                     logger.error(f'{self.session_name} | Неизвестный ответ при получении данных профиля | '
@@ -142,7 +142,7 @@ class Clicker:
                 if not str(status_code).startswith('2'):
                     return status_code, None, None, None, None
 
-                response_json: dict = await response.json()
+                response_json: dict = await response.json(content_type=None)
 
                 if response_json.get('data') \
                         and isinstance(response_json['data'], dict) \
@@ -161,10 +161,10 @@ class Clicker:
                     logger.success(f'{self.session_name} | Успешно сделал Click | Balance: '
                                    f'{balance + clicks_count} (+{clicks_count}) | Total Coins: {total_coins}')
 
-                    next_hash: int | None = eval_js(function=b64decode(response_json['data'][0]['hash'][0]).decode())
+                    next_hash: int | None = eval_js(function=b64decode((await response.json())['data'][0]['hash'][0]).decode())
 
                     return (status_code, balance + clicks_count, available_coins, next_hash,
-                            response_json['data'][0]['turboTimes'] > 0)
+                            (await response.json())['data'][0]['turboTimes'] > 0)
 
                 logger.error(f'{self.session_name} | Не удалось сделать Click, ответ: {await response.text()}')
                 return status_code, None, None, None, None
@@ -178,7 +178,7 @@ class Clicker:
             response: aiohttp.ClientResponse = await client.get(
                 url='https://clicker-api.joincommunity.xyz/clicker/store/merged')
 
-            response_json = await response.json()
+            response_json = await response.json(content_type=None)
             if response_json.get('ok'):
                 return response_json
 
@@ -199,9 +199,10 @@ class Clicker:
         try:
             response: aiohttp.ClientResponse = await client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/store/buy/{item_id}',
-                headers={'accept-language': 'ru-RU,ru;q=0.9'})
+                headers={'accept-language': 'ru-RU,ru;q=0.9'},
+                json=False)
 
-            if (await response.json()).get('ok'):
+            if (await response.json(content_type=None)).get('ok'):
                 return True
 
             logger.error(f'{self.session_name} | Неизвестный ответ при покупке в магазине: {await response.text()}')
@@ -222,9 +223,10 @@ class Clicker:
         try:
             response: aiohttp.ClientResponse = await client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/core/active-turbo',
-                headers={'accept-language': 'ru-RU,ru;q=0.9'})
+                headers={'accept-language': 'ru-RU,ru;q=0.9'},
+                json=False)
 
-            return (await response.json())['data'][0].get('multiple', 1)
+            return (await response.json(content_type=None))['data'][0].get('multiple', 1)
 
         except Exception as error:
             if response:
@@ -242,9 +244,10 @@ class Clicker:
         try:
             response: aiohttp.ClientResponse = await client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/task/{task_id}',
-                headers={'accept-language': 'ru-RU,ru;q=0.9'})
+                headers={'accept-language': 'ru-RU,ru;q=0.9'},
+                json=False)
 
-            if (await response.json()).get('ok'):
+            if (await response.json(content_type=None)).get('ok'):
                 return True
 
             logger.error(
@@ -273,7 +276,7 @@ class Clicker:
             response: aiohttp.ClientResponse = await client.get(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/task/combine-completed')
 
-            for current_buff in (await response.json())['data']:
+            for current_buff in (await response.json(content_type=None))['data']:
                 match current_buff['taskId']:
                     case 3:
                         max_turbo_times: int = current_buff['task']['max']
