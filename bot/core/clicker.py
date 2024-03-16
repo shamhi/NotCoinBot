@@ -143,6 +143,7 @@ class Clicker:
                     return status_code, None, None, None, None
 
                 response_json: dict = await response.json(content_type=None)
+                print(response_json)
 
                 if response_json.get('data') \
                         and isinstance(response_json['data'], dict) \
@@ -238,9 +239,7 @@ class Clicker:
             await asyncio.sleep(delay=3)
             return None
 
-    async def activate_task(self,
-                            client: aiohttp.ClientSession,
-                            task_id: int | str) -> bool | None:
+    async def activate_task(self, client: aiohttp.ClientSession, task_id: int | str) -> bool | None:
         try:
             response: aiohttp.ClientResponse = await client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/task/{task_id}',
@@ -531,15 +530,14 @@ class Clicker:
                                     await asyncio.sleep(delay=random_sleep_time)
 
                                     if await self.activate_task(client=client, task_id=2):
-                                        logger.success(
-                                            f'{self.session_name} | Успешно запросил ежедневный Full Energy')
+                                        logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
 
+                                        await asyncio.sleep(delay=10)
                                         continue
 
                                 sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
 
-                                logger.info(
-                                    f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
+                                logger.info(f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
                                 logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
 
                                 await asyncio.sleep(delay=sleep_time_to_min_coins)
@@ -552,8 +550,7 @@ class Clicker:
                         random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
                                                          b=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
 
-                        logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед запросом '
-                                    f'ежедневного Turbo')
+                        logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед запросом ежедневного Turbo')
 
                         await asyncio.sleep(delay=random_sleep_time)
 
