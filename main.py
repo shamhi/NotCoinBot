@@ -1,22 +1,11 @@
 import asyncio
 import contextlib
-from sys import stderr
 
-from loguru import logger
+from bot.utils.logging import logger
+from bot.utils.launch import start_process
 
-from bot.db.manager import Database
-from bot.utils import start_process
-
-
-logger.remove()
-logger.add(stderr, format='<white>{time:HH:mm:ss}</white>'
-                          ' | <level>{level: <8}</level>'
-                          ' | <cyan>{line}</cyan>'
-                          ' - <white>{message}</white>')
 
 async def main() -> None:
-    # Database on_startup
-
     await start_process(logger=logger)
 
 
