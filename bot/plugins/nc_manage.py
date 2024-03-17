@@ -2,9 +2,9 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.raw.functions.messages import RequestWebView
 
-from bot.utils import run_tasks, scripts
+from bot.utils import scripts
 from bot.utils.emojis import rdeny, rcheck
-from bot.utils.launch import clients
+from bot.utils.launch import clients, run_tasks
 
 
 @Client.on_message(filters.me & filters.private & filters.chat('me') & filters.command('ncu', prefixes='/'))
