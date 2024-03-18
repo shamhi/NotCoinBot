@@ -3,8 +3,9 @@ from pyrogram.types import Message
 from pyrogram.raw.functions.messages import RequestWebView
 
 from bot.utils import scripts
+from bot.utils.logging import logger
 from bot.utils.emojis import rdeny, rcheck
-from bot.utils.launch import clients, run_tasks
+from bot.utils.launcher import clients, run_tasks
 
 
 @Client.on_message(filters.me & filters.private & filters.chat('me') & filters.command('ncu', prefixes='/'))
@@ -32,11 +33,17 @@ async def launch_clicker(client: Client, message: Message):
     flags_to_stop = ['off', 'stop']
 
     if flag in flags_to_start:
+        logger.info(f"Кликер запущен командой /click {flag}\n")
+
         await message.edit(f"{rcheck()}<b>Clicker started!</b>")
         await run_tasks(clients=clients)
+
     elif flag in flags_to_stop:
+        logger.info(f"Кликер остановлен командой /click {flag}\n")
+
         status = await scripts.stop_task(client=client)
         await message.edit(status)
+
     else:
         await message.edit(f"{rdeny()}<b>This command only accept the values: on/off | start/stop</b>")
 
@@ -48,9 +55,9 @@ async def send_help_text(client: Client, message: Message):
 
 @Client.on_message(filters.me & filters.chat('me') & filters.command('balance'))
 async def send_my_balance(client: Client, message: Message):
-    ...
+    ...  # TODO: Soon
 
 
 @Client.on_message(filters.me & filters.chat('me') & filters.command('stats', prefixes='/'))
 async def send_stats(client: Client, message: Message):
-    ...
+    ...  # TODO: Soon
