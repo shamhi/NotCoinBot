@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>NotCoin</title>
+        <meta property="og:description" content="ShamHi's main page">
+        <link rel="shortcut icon" href="{{ url_for('static', path='/images/favicon.ico') }}" type="image/ico">
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/vars.css') }}">
+        <link rel="stylesheet" href="{{ url_for('static', path='/css/style.css') }}">
+        <link href="https://fonts.googleapis.com/css2?family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&family=Raleway:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+        <script src="{{ url_for('static', path='/js/click.js') }}"></script>
+        <script src="{{ url_for('static', path='/js/logger.js') }}"></script>
+    </head>
+
+    <body>
+        <div class="container">
+            <a href="javascript://" class="click-button" onclick="clickOn()">
+                <span class="button-animated-span"></span>
+                <span class="button-animated-span"></span>
+                <span class="button-animated-span"></span>
+                <span class="button-animated-span"></span>
+                Click On
+            </a>
+
+            <ul class="logs"></ul>
+        </div>
+    </body>
+</html>

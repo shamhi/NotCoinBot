@@ -11,7 +11,7 @@ from loguru import logger
 from pyrogram import Client
 from pyrogram.raw import functions
 
-from bot.config import config
+from config import settings
 from bot.exceptions import InvalidSession, TurboExpired, BadRequestStatus, ForbiddenStatus
 from bot.utils import eval_js, scripts
 from .headers import headers
@@ -57,7 +57,11 @@ class Clicker:
 
                 if not self.client.is_connected:
                     with_tg = False
-                    await self.client.connect()
+                    try:
+                        await self.client.connect()
+                    except Exception as er:
+                        logger.error(f"{self.session_name} | Ошибка при подключении к сессии: {er}")
+                        await asyncio.sleep(delay=3)
 
                 web_view = await self.client.invoke(
                     functions.messages.RequestWebView(
@@ -161,7 +165,8 @@ class Clicker:
                     logger.success(f'{self.session_name} | Успешно сделал Click | Balance: '
                                    f'{balance + clicks_count} (+{clicks_count}) | Total Coins: {total_coins}')
 
-                    next_hash: int | None = eval_js(function=b64decode((await response.json())['data'][0]['hash'][0]).decode())
+                    next_hash: int | None = eval_js(
+                        function=b64decode((await response.json())['data'][0]['hash'][0]).decode())
 
                     return (status_code, balance + clicks_count, available_coins, next_hash,
                             (await response.json())['data'][0]['turboTimes'] > 0)
@@ -331,7 +336,7 @@ class Clicker:
         try:
             while True:
                 try:
-                    if time() - access_token_created_time >= (config.SLEEP_TO_UPDATE_USER_DATA * 60):
+                    if time() - access_token_created_time >= (settings.SLEEP_TO_UPDATE_USER_DATA * 60):
                         tg_web_data: str = await self.get_tg_web_data(session_proxy=proxy)
 
                         access_token: str = await self.get_access_token(client=client, tg_web_data=tg_web_data)
@@ -344,8 +349,8 @@ class Clicker:
                     profile_data: dict = await self.get_profile_data(client=client)
 
                     if not active_turbo:
-                        if config.MIN_CLICKS_COUNT > floor(profile_data['data'][0]['availableCoins'] /
-                                                           profile_data['data'][0]['multipleClicks']):
+                        if settings.MIN_CLICKS_COUNT > floor(profile_data['data'][0]['availableCoins'] /
+                                                             profile_data['data'][0]['multipleClicks']):
                             logger.info(f'{self.session_name} | Недостаточно монет для клика')
                             continue
 
@@ -357,7 +362,7 @@ class Clicker:
                     else:
                         max_clicks_count: int = 160
 
-                    clicks_count: int = (randint(a=config.MIN_CLICKS_COUNT, b=max_clicks_count) *
+                    clicks_count: int = (randint(a=settings.MIN_CLICKS_COUNT, b=max_clicks_count) *
                                          profile_data['data'][0]['multipleClicks'] * turbo_multiplier)
 
                     try:
@@ -381,8 +386,8 @@ class Clicker:
 
                         if status_code == 403:
                             logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
-                            logger.info(f"{self.session_name} | Сплю {config.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
-                            await asyncio.sleep(delay=config.SLEEP_AFTER_FORBIDDEN_STATUS)
+                            logger.info(f"{self.session_name} | Сплю {settings.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
+                            await asyncio.sleep(delay=settings.SLEEP_AFTER_FORBIDDEN_STATUS)
 
                             await self.close_connectors(client, ssl_conn, proxy_conn)
                             access_token_created_time = 0
@@ -402,8 +407,8 @@ class Clicker:
                         continue
 
                     if have_turbo:
-                        random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_TURBO[0],
-                                                         b=config.SLEEP_BEFORE_ACTIVATE_TURBO[1])
+                        random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
+                                                         b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
 
                         logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией Turbo')
 
@@ -426,20 +431,20 @@ class Clicker:
                             for current_merge in merged_data['data']:
                                 match current_merge['id']:
                                     case 1:
-                                        if not config.AUTO_BUY_ENERGY_BOOST:
+                                        if not settings.AUTO_BUY_ENERGY_BOOST:
                                             continue
 
                                         energy_price: int | None = current_merge['price']
                                         energy_count: int | None = current_merge['count']
 
-                                        if energy_count >= config.MAX_ENERGY_BOOST:
+                                        if energy_count >= settings.MAX_ENERGY_BOOST:
                                             continue
 
                                         if new_balance >= energy_price \
                                                 and current_merge['max'] > current_merge['count']:
                                             sleep_before_buy_merge: int = randint(
-                                                a=config.SLEEP_BEFORE_BUY_MERGE[0],
-                                                b=config.SLEEP_BEFORE_BUY_MERGE[1])
+                                                a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                             logger.info(f'{self.session_name} | Улучшаем Energy Boost до '
                                                         f'{energy_count + 1} lvl')
@@ -454,20 +459,20 @@ class Clicker:
                                                 continue
 
                                     case 2:
-                                        if not config.AUTO_BUY_SPEED_BOOST:
+                                        if not settings.AUTO_BUY_SPEED_BOOST:
                                             continue
 
                                         speed_price: int | None = current_merge['price']
                                         speed_count: int | None = current_merge['count']
 
-                                        if speed_count >= config.MAX_SPEED_BOOST:
+                                        if speed_count >= settings.MAX_SPEED_BOOST:
                                             continue
 
                                         if new_balance >= speed_price \
                                                 and current_merge['max'] > current_merge['count']:
                                             sleep_before_buy_merge: int = randint(
-                                                a=config.SLEEP_BEFORE_BUY_MERGE[0],
-                                                b=config.SLEEP_BEFORE_BUY_MERGE[1])
+                                                a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                             logger.info(f'{self.session_name} | Улучшаем Speed Boost до '
                                                         f'{speed_count + 1} lvl')
@@ -481,20 +486,20 @@ class Clicker:
                                                 continue
 
                                     case 3:
-                                        if not config.AUTO_BUY_CLICK_BOOST:
+                                        if not settings.AUTO_BUY_CLICK_BOOST:
                                             continue
 
                                         click_price: int | None = current_merge['price']
                                         click_count: int | None = current_merge['count']
 
-                                        if click_count >= config.MAX_CLICK_BOOST:
+                                        if click_count >= settings.MAX_CLICK_BOOST:
                                             continue
 
                                         if new_balance >= click_price \
                                                 and current_merge['max'] > current_merge['count']:
                                             sleep_before_buy_merge: int = randint(
-                                                a=config.SLEEP_BEFORE_BUY_MERGE[0],
-                                                b=config.SLEEP_BEFORE_BUY_MERGE[1])
+                                                a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                             logger.info(f'{self.session_name} | Улучшаем Click Booster до '
                                                         f'{click_count + 1} lvl')
@@ -512,15 +517,15 @@ class Clicker:
 
                     free_daily_turbo, free_daily_full_energy = await self.get_free_buffs_data(client=client)
 
-                    if config.SLEEP_BY_MIN_COINS:
+                    if settings.SLEEP_BY_MIN_COINS:
                         if available_coins:
-                            min_available_coins = config.MIN_AVAILABLE_COINS
+                            min_available_coins = settings.MIN_AVAILABLE_COINS
 
                             if available_coins < min_available_coins:
                                 if free_daily_full_energy:
                                     random_sleep_time: int = randint(
-                                        a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                        b=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+                                        a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                        b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
 
                                     logger.info(
                                         f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
@@ -533,7 +538,7 @@ class Clicker:
 
                                         continue
 
-                                sleep_time_to_min_coins = config.SLEEP_BY_MIN_COINS_TIME
+                                sleep_time_to_min_coins = settings.SLEEP_BY_MIN_COINS_TIME
 
                                 logger.info(f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
                                 logger.info(f"{self.session_name} | Сплю {sleep_time_to_min_coins} сек.")
@@ -545,8 +550,8 @@ class Clicker:
                                 continue
 
                     if free_daily_turbo:
-                        random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                                         b=config.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+                        random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                                         b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
 
                         logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед запросом ежедневного Turbo')
 
@@ -555,8 +560,8 @@ class Clicker:
                         if await self.activate_task(client=client, task_id=3):
                             logger.success(f'{self.session_name} | Успешно запросил ежедневное Turbo')
 
-                            random_sleep_time: int = randint(a=config.SLEEP_BEFORE_ACTIVATE_TURBO[0],
-                                                             b=config.SLEEP_BEFORE_ACTIVATE_TURBO[1])
+                            random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
+                                                             b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
 
                             logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией Turbo')
 
@@ -579,15 +584,15 @@ class Clicker:
                 except Exception as error:
                     logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
 
-                    random_sleep_time: int = randint(a=config.SLEEP_BETWEEN_CLICK[0],
-                                                     b=config.SLEEP_BETWEEN_CLICK[1])
+                    random_sleep_time: int = randint(a=settings.SLEEP_BETWEEN_CLICK[0],
+                                                     b=settings.SLEEP_BETWEEN_CLICK[1])
 
                     logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
                     await asyncio.sleep(delay=random_sleep_time)
 
                 else:
-                    random_sleep_time: int = randint(a=config.SLEEP_BETWEEN_CLICK[0],
-                                                     b=config.SLEEP_BETWEEN_CLICK[1])
+                    random_sleep_time: int = randint(a=settings.SLEEP_BETWEEN_CLICK[0],
+                                                     b=settings.SLEEP_BETWEEN_CLICK[1])
 
                     logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
                     await asyncio.sleep(delay=random_sleep_time)
@@ -603,9 +608,7 @@ class Clicker:
             await asyncio.sleep(delay=3)
 
 
-async def run_clicker(session_name: str,
-                      client: Client,
-                      proxy: str | None = None, ) -> None:
+async def run_clicker(session_name: str, client: Client, proxy: str | None = None) -> None:
     try:
         await Clicker(session_name=session_name, client=client).run(proxy=proxy)
 
