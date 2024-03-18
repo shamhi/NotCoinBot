@@ -47,13 +47,17 @@
 ~/NotCoinBot >>> python3 -m venv venv
 ~/NotCoinBot >>> source venv/bin/activate
 ~/NotCoinBot >>> pip3 install -r requirements.txt
+~/NotCoinBot >>> cp .env-example .env
+~/NotCoinBot >>> nano .env  # Здесь вы обязательно должны указать ваши API_ID и API_HASH , остальное берется по умолчанию
 ~/NotCoinBot >>> python3 main.py
 
 # Windows
 ~/NotCoinBot >>> python -m venv venv
-~/NotCoinBot >>> .\venv\Scripts\activate
+~/NotCoinBot >>> venv\Scripts\activate
 ~/NotCoinBot >>> pip install -r .\requirements.txt
-~/NotCoinBot >>> python .\main.py
+~/NotCoinBot >>> # Копируете содержимое .env-example
+~/NotCoinBot >>> # Создаете файл .env, в котором вставляете скопированные данные из .env-example и обязательно указываете ваши API_ID и API_HASH, остальное берется по умолчанию
+~/NotCoinBot >>> python main.py
 ```
 
 Также для быстрого запуска вы можете использовать аргументы, например:

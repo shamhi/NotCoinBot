@@ -42,17 +42,21 @@ You can download the [**Git Repo**](https://github.com/shamhi/NotCoinBot) by clo
 ~ >>> git clone https://github.com/shamhi/NotCoinBot.git 
 ~ >>> cd NotCoinBot
 
-# Linux
+#Linux
 ~/NotCoinBot >>> python3 -m venv venv
 ~/NotCoinBot >>> source venv/bin/activate
 ~/NotCoinBot >>> pip3 install -r requirements.txt
+~/NotCoinBot >>> cp .env-example .env
+~/NotCoinBot >>> nano .env # Here you must specify your API_ID and API_HASH , the rest is taken by default
 ~/NotCoinBot >>> python3 main.py
 
-# Windows
+#Windows
 ~/NotCoinBot >>> python -m venv venv
-~/NotCoinBot >>> .\venv\Scripts\activate
+~/NotCoinBot >>> venv\Scripts\activate
 ~/NotCoinBot >>> pip install -r .\requirements.txt
-~/NotCoinBot >>> python .\main.py
+~/NotCoinBot >>> # Copy the contents of .env-example
+~/NotCoinBot >>> # Create a .env file in which you paste the copied data from .env-example and be sure to indicate your API_ID and API_HASH, the rest is taken by default
+~/NotCoinBot >>> python main.py
 ```
 
 You can also use arguments for quick launch, for example:
