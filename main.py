@@ -2,7 +2,7 @@ import asyncio
 import contextlib
 
 from bot.utils.logging import logger
-from bot.utils.launch import start_process
+from bot.utils.launcher import start_process
 
 
 async def main() -> None:
