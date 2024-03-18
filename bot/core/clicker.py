@@ -280,18 +280,17 @@ class Clicker:
                 url=f'https://clicker-api.joincommunity.xyz/clicker/task/combine-completed')
 
             for current_buff in (await response.json(content_type=None))['data']:
-                match current_buff['taskId']:
-                    case 3:
-                        max_turbo_times: int = current_buff['task']['max']
+                if current_buff['taskId'] == 3:
+                    max_turbo_times: int = current_buff['task']['max']
 
-                        if current_buff['task']['status'] == 'active':
-                            turbo_times_count += 1
+                    if current_buff['task']['status'] == 'active':
+                        turbo_times_count += 1
 
-                    case 2:
-                        max_full_energy_times: int = current_buff['task']['max']
+                elif current_buff['taskId'] == 2:
+                    max_full_energy_times: int = current_buff['task']['max']
 
-                        if current_buff['task']['status'] == 'active':
-                            full_energy_times_count += 1
+                    if current_buff['task']['status'] == 'active':
+                        full_energy_times_count += 1
 
             return max_turbo_times > turbo_times_count, max_full_energy_times > full_energy_times_count
 
@@ -429,91 +428,90 @@ class Clicker:
 
                         if merged_data:
                             for current_merge in merged_data['data']:
-                                match current_merge['id']:
-                                    case 1:
-                                        if not settings.AUTO_BUY_ENERGY_BOOST:
+                                if current_merge['id'] == 1:
+                                    if not settings.AUTO_BUY_ENERGY_BOOST:
+                                        continue
+
+                                    energy_price: int | None = current_merge['price']
+                                    energy_count: int | None = current_merge['count']
+
+                                    if energy_count >= settings.MAX_ENERGY_BOOST:
+                                        continue
+
+                                    if new_balance >= energy_price \
+                                            and current_merge['max'] > current_merge['count']:
+                                        sleep_before_buy_merge: int = randint(
+                                            a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                            b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+
+                                        logger.info(f'{self.session_name} | Улучшаем Energy Boost до '
+                                                    f'{energy_count + 1} lvl')
+                                        logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
+                                                    f'перед покупкой Energy Boost')
+
+                                        await asyncio.sleep(delay=sleep_before_buy_merge)
+
+                                        if await self.buy_item(client=client, item_id=1):
+                                            logger.success(f'{self.session_name} | Успешно купил Energy '
+                                                           'Boost')
                                             continue
 
-                                        energy_price: int | None = current_merge['price']
-                                        energy_count: int | None = current_merge['count']
+                                elif current_merge['id'] == 2:
+                                    if not settings.AUTO_BUY_SPEED_BOOST:
+                                        continue
 
-                                        if energy_count >= settings.MAX_ENERGY_BOOST:
+                                    speed_price: int | None = current_merge['price']
+                                    speed_count: int | None = current_merge['count']
+
+                                    if speed_count >= settings.MAX_SPEED_BOOST:
+                                        continue
+
+                                    if new_balance >= speed_price \
+                                            and current_merge['max'] > current_merge['count']:
+                                        sleep_before_buy_merge: int = randint(
+                                            a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                            b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+
+                                        logger.info(f'{self.session_name} | Улучшаем Speed Boost до '
+                                                    f'{speed_count + 1} lvl')
+                                        logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
+                                                    f'перед покупкой Speed Boost')
+
+                                        await asyncio.sleep(delay=sleep_before_buy_merge)
+
+                                        if await self.buy_item(client=client, item_id=2):
+                                            logger.success(f'{self.session_name} | Успешно купил Speed Boost')
                                             continue
 
-                                        if new_balance >= energy_price \
-                                                and current_merge['max'] > current_merge['count']:
-                                            sleep_before_buy_merge: int = randint(
-                                                a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                                b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+                                elif current_merge['id'] == 3:
+                                    if not settings.AUTO_BUY_CLICK_BOOST:
+                                        continue
 
-                                            logger.info(f'{self.session_name} | Улучшаем Energy Boost до '
-                                                        f'{energy_count + 1} lvl')
-                                            logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
-                                                        f'перед покупкой Energy Boost')
+                                    click_price: int | None = current_merge['price']
+                                    click_count: int | None = current_merge['count']
 
-                                            await asyncio.sleep(delay=sleep_before_buy_merge)
+                                    if click_count >= settings.MAX_CLICK_BOOST:
+                                        continue
 
-                                            if await self.buy_item(client=client, item_id=1):
-                                                logger.success(f'{self.session_name} | Успешно купил Energy '
-                                                               'Boost')
-                                                continue
+                                    if new_balance >= click_price \
+                                            and current_merge['max'] > current_merge['count']:
+                                        sleep_before_buy_merge: int = randint(
+                                            a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                            b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
-                                    case 2:
-                                        if not settings.AUTO_BUY_SPEED_BOOST:
+                                        logger.info(f'{self.session_name} | Улучшаем Click Booster до '
+                                                    f'{click_count + 1} lvl')
+                                        logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
+                                                    f'перед покупкой Click Booster')
+
+                                        await asyncio.sleep(delay=sleep_before_buy_merge)
+
+                                        if await self.buy_item(client=client, item_id=3):
+                                            logger.success(f'{self.session_name} | Успешно купил Click Boost')
                                             continue
 
-                                        speed_price: int | None = current_merge['price']
-                                        speed_count: int | None = current_merge['count']
-
-                                        if speed_count >= settings.MAX_SPEED_BOOST:
-                                            continue
-
-                                        if new_balance >= speed_price \
-                                                and current_merge['max'] > current_merge['count']:
-                                            sleep_before_buy_merge: int = randint(
-                                                a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                                b=settings.SLEEP_BEFORE_BUY_MERGE[1])
-
-                                            logger.info(f'{self.session_name} | Улучшаем Speed Boost до '
-                                                        f'{speed_count + 1} lvl')
-                                            logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
-                                                        f'перед покупкой Speed Boost')
-
-                                            await asyncio.sleep(delay=sleep_before_buy_merge)
-
-                                            if await self.buy_item(client=client, item_id=2):
-                                                logger.success(f'{self.session_name} | Успешно купил Speed Boost')
-                                                continue
-
-                                    case 3:
-                                        if not settings.AUTO_BUY_CLICK_BOOST:
-                                            continue
-
-                                        click_price: int | None = current_merge['price']
-                                        click_count: int | None = current_merge['count']
-
-                                        if click_count >= settings.MAX_CLICK_BOOST:
-                                            continue
-
-                                        if new_balance >= click_price \
-                                                and current_merge['max'] > current_merge['count']:
-                                            sleep_before_buy_merge: int = randint(
-                                                a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                                b=settings.SLEEP_BEFORE_BUY_MERGE[1])
-
-                                            logger.info(f'{self.session_name} | Улучшаем Click Booster до '
-                                                        f'{click_count + 1} lvl')
-                                            logger.info(f'{self.session_name} | Сплю {sleep_before_buy_merge} сек. '
-                                                        f'перед покупкой Click Booster')
-
-                                            await asyncio.sleep(delay=sleep_before_buy_merge)
-
-                                            if await self.buy_item(client=client, item_id=3):
-                                                logger.success(f'{self.session_name} | Успешно купил Click Boost')
-                                                continue
-
-                                    case 4:
-                                        ...
+                                elif current_merge['id'] == 4:
+                                    ...
 
                     free_daily_turbo, free_daily_full_energy = await self.get_free_buffs_data(client=client)
 

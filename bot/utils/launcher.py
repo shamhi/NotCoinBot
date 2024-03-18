@@ -98,27 +98,26 @@ async def start_process(logger: Logger):
     ))
     print()
 
-    match user_action:
-        case 1:
-            await create_sessions()
+    if user_action == 1:
+        await create_sessions()
 
-        case 2:
-            clients = await get_clients(session_files=session_files)
+    elif user_action == 2:
+        clients = await get_clients(session_files=session_files)
 
-            logger.info(f"Бот запущен на {len(session_files)} сессиях.\n"
-                        f"Отправьте /help в чате Избранное/Saved Messages \n")
+        logger.info(f"Бот запущен на {len(session_files)} сессиях.\n"
+                    f"Отправьте /help в чате Избранное/Saved Messages \n")
 
-            await compose(clients)
+        await compose(clients)
 
-        case 3:
-            clients = await get_clients(session_files=session_files)
+    elif user_action == 3:
+        clients = await get_clients(session_files=session_files)
 
-            logger.info("Бот запущен без возможности управления через телеграмм")
+        logger.info("Бот запущен без возможности управления через телеграмм")
 
-            await run_tasks(clients=clients)
+        await run_tasks(clients=clients)
 
-        case _:
-            logger.error("Действие выбрано некорректно")
+    else:
+        logger.error("Действие выбрано некорректно")
 
 
 async def run_tasks(clients: list[Client]):
