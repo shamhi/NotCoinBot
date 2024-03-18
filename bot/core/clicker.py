@@ -57,7 +57,11 @@ class Clicker:
 
                 if not self.client.is_connected:
                     with_tg = False
-                    await self.client.connect()
+                    try:
+                        await self.client.connect()
+                    except Exception as er:
+                        logger.error(f"{self.session_name} | Ошибка при подключении к сессии: {er}")
+                        await asyncio.sleep(delay=3)
 
                 web_view = await self.client.invoke(
                     functions.messages.RequestWebView(
