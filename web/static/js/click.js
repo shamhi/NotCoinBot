@@ -1,4 +1,3 @@
-import { updateLogs } from './logger'
 
 let logsIntervalId;
 

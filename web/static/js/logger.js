@@ -1,4 +1,4 @@
-export const updateLogs = async () => {
+const updateLogs = async () => {
     const logsBlock = document.querySelector('.logs');
 
     try {
