@@ -7,8 +7,7 @@ const clickOn = async () => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: 'on' })
+            }
         });
 
         if (response.ok) {
@@ -40,8 +39,7 @@ const clickOff = async () => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ status: 'off' })
+            }
         });
 
         if (response.ok) {
