@@ -40,6 +40,7 @@ def get_proxies() -> list[Proxy]:
 
 
 async def get_session_string(session_name: str):
+    session = None
     for action in [SessionManager.from_pyrogram_file, SessionManager.from_telethon_file]:
         try:
             session = await action(f'sessions/{session_name}.session')
