@@ -1,5 +1,5 @@
 from .eval_js import eval_js
-from . import launch
+from . import launcher
 from . import scripts
 from . import emojis
 
