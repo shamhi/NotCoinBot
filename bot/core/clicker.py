@@ -1,3 +1,4 @@
+import sys
 import asyncio
 from base64 import b64decode
 from math import floor
@@ -608,6 +609,8 @@ class Clicker:
 
 async def run_clicker(session_name: str, client: Client, proxy: str | None = None) -> None:
     try:
+        sys.setrecursionlimit(100000)
+
         await Clicker(session_name=session_name, client=client).run(proxy=proxy)
 
     except (BadRequestStatus, ForbiddenStatus):
