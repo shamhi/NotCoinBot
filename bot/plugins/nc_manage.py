@@ -19,7 +19,7 @@ async def get_notcoin_url(client: Client, message: Message):
             url='https://clicker.joincommunity.xyz/clicker'
         )
     )
-    url = web_view.url
+    url = web_view.url.replace('tgWebAppVersion=6.7', 'tgWebAppVersion=7.0')
     await message.edit(url, disable_web_page_preview=True)
 
 

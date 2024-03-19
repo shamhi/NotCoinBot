@@ -26,7 +26,7 @@ def get_session_files() -> list[str]:
 
 def get_proxies() -> list[Proxy]:
     if settings.USE_PROXY_FROM_FILE:
-        with open(file='bot/config/proxies.txt',
+        with open(file='config/proxies.txt',
                   mode='r',
                   encoding='utf-8-sig') as file:
             proxies: list[Proxy] = [Proxy.from_str(proxy=row.strip()).as_url for row in file]
