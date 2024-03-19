@@ -12,9 +12,6 @@ from loguru._logger import Logger
 
 from config import settings
 from bot.core import run_clicker, create_sessions
-from bot.exceptions import InvalidSession
-
-
 
 
 clients = []
@@ -39,7 +36,7 @@ def get_proxies() -> list[Proxy]:
     return proxies
 
 
-async def get_session_string(session_name: str):
+async def get_session_string(session_name: str) -> str | None:
     session = None
     for action in [SessionManager.from_pyrogram_file, SessionManager.from_telethon_file]:
         try:
@@ -51,12 +48,12 @@ async def get_session_string(session_name: str):
             break
 
     if not session:
-        raise InvalidSession(session_name)
+        return None
 
     return session.to_pyrogram_string()
 
 
-async def get_clients(session_files: list[str]):
+async def get_clients(session_files: list[str]) -> list[Client]:
     if not session_files:
         raise FileNotFoundError("Not found session files")
 
@@ -77,7 +74,7 @@ async def get_clients(session_files: list[str]):
     return clients
 
 
-async def start_process(logger: Logger):
+async def start_process(logger: Logger) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', '--action', type=int, help='Action to perform')
 
@@ -133,5 +130,3 @@ async def run_tasks(clients: list[Client]):
     ]
 
     await asyncio.gather(*tasks)
-
-    print('after bot')
