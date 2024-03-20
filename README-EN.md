@@ -16,7 +16,7 @@
 | Support for tdata / pyrogram .session / telethon .session                             |     ✅     |
 
 
-## [Settings](https://github.com/shamhi/NotCoinBot/blob/main/bot/config/config.py)
+## [Settings](https://github.com/shamhi/NotCoinBot/blob/main/config/config.py)
 | Setting                              | Description                                                                                                                              |
 |--------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 | **API_ID / API_HASH**                | Platform data for starting a Telegram session (default - Android)                                                                        |
