@@ -29,7 +29,7 @@
 | **AUTO_BUY_CLICK_BOOST**             | Автоматическая покупка Click Boost при достижении баланса (True / False)                                                                        |
 | **MAX_CLICK_BOOST**                  | Максимальный уровень улучшения Click Boost (напр. 10)                                                                                           |
 | **SLEEP_BY_MIN_COINS**               | Использовать-ли задержку при достижении минимального количества коинов (True / False)                                                           |
-| **USE_PROXY_FROM_FILE**              | Использовать-ли Proxy из файла `bot/config/proxies.txt` для аккаунтов, к которым не привязаны Proxy (True / False)                              |
+| **USE_PROXY_FROM_FILE**              | Использовать-ли Proxy из файла `config/proxies.txt` для аккаунтов, к которым не привязаны Proxy (True / False)                                  |
 | **SLEEP_BETWEEN_CLICK**              | Диапазон задержки между кликами (в секундах)                                                                                                    |
 | **SLEEP_BEFORE_BUY_MERGE**           | Диапазон задержки перед покупкой бустов (в секундах)                                                                                            |
 | **SLEEP_BEFORE_ACTIVATE_FREE_BUFFS** | Диапазон задержки перед активацией ежедневных бустов (в секундах)                                                                               |
@@ -63,9 +63,9 @@
 
 Также для быстрого запуска вы можете использовать аргументы, например:
 ```shell
-~/NotCoinBot >>> python3 main.py --action (1/2)
+~/NotCoinBot >>> python3 main.py --action (1/2/3)
 # Или
-~/NotCoinBot >>> python3 main.py -a (1/2)
+~/NotCoinBot >>> python3 main.py -a (1/2/3)
 
 # 1 - Запускает регистратор сессии
 # 2 - Запускает с возможностью управления через телеграмм

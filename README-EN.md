@@ -29,7 +29,7 @@
 | **AUTO_BUY_CLICK_BOOST**             | Automatically buy Click Boost when the balance is reached (True / False)                                                                 |
 | **MAX_CLICK_BOOST**                  | Maximum level of Click Boost upgrade (e.g., 10)                                                                                          |
 | **SLEEP_BY_MIN_COINS**               | Whether to use a delay when reaching the minimum amount of coins (True / False)                                                          |
-| **USE_PROXY_FROM_FILE**              | Whether to use Proxy from the `bot/config/proxies.txt` file for accounts not bound to Proxy (True / False)                               |
+| **USE_PROXY_FROM_FILE**              | Whether to use Proxy from the `config/proxies.txt` file for accounts not bound to Proxy (True / False)                                   |
 | **SLEEP_BETWEEN_CLICK**              | Range of delay between clicks (in seconds)                                                                                               |
 | **SLEEP_BEFORE_BUY_MERGE**           | Range of delay before buying boosts (in seconds)                                                                                         |
 | **SLEEP_BEFORE_ACTIVATE_FREE_BUFFS** | Range of delay before activating daily boosts (in seconds)                                                                               |
@@ -62,9 +62,9 @@ You can download the [**Git Repo**](https://github.com/shamhi/NotCoinBot) by clo
 
 You can also use arguments for quick launch, for example:
 ```
-~/NotCoinBot >>> python3 main.py --action (1/2)
+~/NotCoinBot >>> python3 main.py --action (1/2/3)
 # Or
-~/NotCoinBot >>> python3 main.py -a (1/2)
+~/NotCoinBot >>> python3 main.py -a (1/2/3)
 
 # 1 - Launches session registrar
 # 2 - Launches with the ability to control via telegram
