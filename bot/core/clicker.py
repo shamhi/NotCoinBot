@@ -325,7 +325,8 @@ class Clicker:
 
     async def check_proxy(self) -> None:
         try:
-            async with aiohttp.request('GET', 'https://httpbin.org/ip', proxy=self.proxy, timeout=aiohttp.ClientTimeout(5)) as response:
+            async with aiohttp.request('GET', 'https://httpbin.org/ip', proxy=self.proxy,
+                                       timeout=aiohttp.ClientTimeout(5)) as response:
                 ip = (await response.json()).get('origin')
                 logger.info(f"{self.session_name} | Proxy IP: {ip}")
         except Exception as er:
@@ -336,7 +337,8 @@ class Clicker:
         for connector in connectors:
             try:
                 if connector: await connector.close() if not connector.closed else ...
-            except: ...
+            except:
+                ...
 
     async def run(self):
         access_token_created_time: float = 0
@@ -465,9 +467,8 @@ class Clicker:
 
                                     if new_balance >= energy_price \
                                             and current_merge['max'] > current_merge['count']:
-                                        sleep_before_buy_merge: int = randint(
-                                            a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                            b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+                                        sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                                              b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                         logger.info(f'{self.session_name} | Улучшаем Energy Boost до '
                                                     f'{energy_count + 1} lvl')
@@ -493,9 +494,8 @@ class Clicker:
 
                                     if new_balance >= speed_price \
                                             and current_merge['max'] > current_merge['count']:
-                                        sleep_before_buy_merge: int = randint(
-                                            a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                            b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+                                        sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                                              b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                         logger.info(f'{self.session_name} | Улучшаем Speed Boost до '
                                                     f'{speed_count + 1} lvl')
@@ -520,9 +520,8 @@ class Clicker:
 
                                     if new_balance >= click_price \
                                             and current_merge['max'] > current_merge['count']:
-                                        sleep_before_buy_merge: int = randint(
-                                            a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                            b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+                                        sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                                              b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                         logger.info(f'{self.session_name} | Улучшаем Click Booster до '
                                                     f'{click_count + 1} lvl')
@@ -539,28 +538,29 @@ class Clicker:
                                     ...
 
                     free_daily_turbo, free_daily_full_energy = await self.get_free_buffs_data(client=client)
+                    min_available_coins = settings.MIN_AVAILABLE_COINS
+
+                    if settings.ACTIVATE_DAILY_ENERGY:
+                        if available_coins < min_available_coins:
+                            if free_daily_full_energy:
+                                random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                                                 b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+
+                                logger.info(
+                                    f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
+                                    f'ежедневного Full Energy')
+
+                                await asyncio.sleep(delay=random_sleep_time)
+
+                                if await self.activate_task(client=client, task_id=2):
+                                    logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
+
+                                    continue
 
                     if settings.SLEEP_BY_MIN_COINS:
                         if available_coins:
-                            min_available_coins = settings.MIN_AVAILABLE_COINS
 
                             if available_coins < min_available_coins:
-                                if free_daily_full_energy:
-                                    random_sleep_time: int = randint(
-                                        a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                        b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
-
-                                    logger.info(
-                                        f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
-                                        f'ежедневного Full Energy')
-
-                                    await asyncio.sleep(delay=random_sleep_time)
-
-                                    if await self.activate_task(client=client, task_id=2):
-                                        logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
-
-                                        continue
-
                                 sleep_time_to_min_coins = settings.SLEEP_BY_MIN_COINS_TIME
 
                                 logger.info(f"{self.session_name} | Достигнут минимальный баланс: {available_coins}")
@@ -572,34 +572,36 @@ class Clicker:
 
                                 continue
 
-                    if free_daily_turbo:
-                        random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                                         b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+                    if settings.ACTIVATE_DAILY_TURBO:
+                        if free_daily_turbo:
+                            random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                                             b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
 
-                        logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед запросом ежедневного Turbo')
-
-                        await asyncio.sleep(delay=random_sleep_time)
-
-                        if await self.activate_task(client=client, task_id=3):
-                            logger.success(f'{self.session_name} | Успешно запросил ежедневное Turbo')
-
-                            random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
-                                                             b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
-
-                            logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией Turbo')
+                            logger.info(
+                                f'{self.session_name} | Сплю {random_sleep_time} перед запросом ежедневного Turbo')
 
                             await asyncio.sleep(delay=random_sleep_time)
 
-                            turbo_multiplier: int | None = await self.activate_turbo(client=client)
+                            if await self.activate_task(client=client, task_id=3):
+                                logger.success(f'{self.session_name} | Успешно запросил ежедневное Turbo')
 
-                            if turbo_multiplier:
-                                logger.success(f'{self.session_name} | Успешно активировал Turbo: '
-                                               f'x{turbo_multiplier}')
-                                active_turbo: bool = True
-                                continue
+                                random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
+                                                                 b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
 
-                            else:
-                                turbo_multiplier: int = 1
+                                logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией Turbo')
+
+                                await asyncio.sleep(delay=random_sleep_time)
+
+                                turbo_multiplier: int | None = await self.activate_turbo(client=client)
+
+                                if turbo_multiplier:
+                                    logger.success(f'{self.session_name} | Успешно активировал Turbo: '
+                                                   f'x{turbo_multiplier}')
+                                    active_turbo: bool = True
+                                    continue
+
+                                else:
+                                    turbo_multiplier: int = 1
 
                 except InvalidSession as error:
                     raise error

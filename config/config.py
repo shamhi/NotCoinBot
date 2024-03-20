@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     AUTO_BUY_CLICK_BOOST: bool = False
     MAX_CLICK_BOOST: int = 10
 
+    ACTIVATE_DAILY_ENERGY: bool = True
+    ACTIVATE_DAILY_TURBO: bool = True
+
     SLEEP_BY_MIN_COINS: bool = True
 
     USE_PROXY_FROM_FILE: bool = False
@@ -28,7 +31,9 @@ class Settings(BaseSettings):
     SLEEP_BEFORE_BUY_MERGE: list[int] = [5, 15]
     SLEEP_BEFORE_ACTIVATE_FREE_BUFFS: list[int] = [5, 15]
     SLEEP_BEFORE_ACTIVATE_TURBO: list[int] = [5, 15]
+
     SLEEP_AFTER_FORBIDDEN_STATUS: int = 35
+
     SLEEP_TO_UPDATE_USER_DATA: int = 60 * 5
     SLEEP_BY_MIN_COINS_TIME: int = 60 * 5
 
