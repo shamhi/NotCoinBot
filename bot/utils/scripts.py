@@ -42,17 +42,15 @@ def with_args(text: str):
 
 def get_proxy_dict(session_proxy: str | None) -> Proxy | None:
     try:
-        proxy: Proxy = Proxy.from_str(
-            proxy=session_proxy
-        )
+        proxy: Proxy = Proxy.from_str(proxy=session_proxy)
 
-        proxy_dict: dict = {
-            'proxy_type': proxy.protocol,
-            'addr': proxy.host,
-            'port': proxy.port,
-            'username': proxy.login,
-            'password': proxy.password
-        }
+        proxy_dict: dict = dict(
+            scheme=proxy.protocol,
+            hostname=proxy.host,
+            port=proxy.port,
+            username=proxy.login,
+            password=proxy.password
+        )
 
     except ValueError:
         logger.error(f'Неверно указан Proxy, повторите попытку ввода')
