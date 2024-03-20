@@ -153,14 +153,14 @@ class Clicker:
 
                 response_json: dict = await response.json(content_type=None)
 
-                if response_json.get('data') \
-                        and isinstance(response_json['data'], dict) \
-                        and response_json['data'].get('message', '') == 'Turbo mode is expired':
+                if (response_json.get('data')
+                        and isinstance(response_json['data'], dict)
+                        and response_json['data'].get('message', '') == 'Turbo mode is expired'):
                     raise TurboExpired()
 
-                if response_json.get('data') \
-                        and isinstance(response_json['data'], dict) \
-                        and response_json['data'].get('message', '') == 'Try later':
+                if (response_json.get('data')
+                        and isinstance(response_json['data'], dict)
+                        and response_json['data'].get('message', '') == 'Try later'):
                     await asyncio.sleep(delay=3)
                     continue
 
@@ -465,8 +465,7 @@ class Clicker:
                                     if energy_count >= settings.MAX_ENERGY_BOOST:
                                         continue
 
-                                    if new_balance >= energy_price \
-                                            and current_merge['max'] > current_merge['count']:
+                                    if new_balance >= energy_price and current_merge['max'] > current_merge['count']:
                                         sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
                                                                               b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
@@ -492,8 +491,7 @@ class Clicker:
                                     if speed_count >= settings.MAX_SPEED_BOOST:
                                         continue
 
-                                    if new_balance >= speed_price \
-                                            and current_merge['max'] > current_merge['count']:
+                                    if new_balance >= speed_price and current_merge['max'] > current_merge['count']:
                                         sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
                                                                               b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
@@ -518,8 +516,7 @@ class Clicker:
                                     if click_count >= settings.MAX_CLICK_BOOST:
                                         continue
 
-                                    if new_balance >= click_price \
-                                            and current_merge['max'] > current_merge['count']:
+                                    if new_balance >= click_price and current_merge['max'] > current_merge['count']:
                                         sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
                                                                               b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
