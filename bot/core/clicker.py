@@ -7,7 +7,6 @@ from time import time
 from urllib.parse import unquote
 
 import aiohttp
-from aiohttp_proxy import ProxyConnector
 from loguru import logger
 from pyrogram import Client
 from pyrogram.raw import functions
@@ -20,15 +19,19 @@ from .TLS import TLSv1_3_BYPASS
 
 
 class Clicker:
-    def __init__(self, session_name: str, client: Client):
+    def __init__(self, session_name: str, client: Client, proxy: str):
         self.session_name: str = session_name
         self.client: Client = client
+        self.proxy = proxy
 
     async def get_access_token(self, client: aiohttp.ClientSession, tg_web_data: str) -> str:
         while True:
+            response = None
+
             try:
                 response: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/auth/webapp-session',
+                    proxy=self.proxy,
                     json={'webAppData': tg_web_data})
 
                 response_json = await response.json(content_type=None)
@@ -44,11 +47,11 @@ class Clicker:
 
                 await asyncio.sleep(delay=3)
 
-    async def get_tg_web_data(self, session_proxy: str | None) -> str | None:
+    async def get_tg_web_data(self) -> str | None:
         while True:
             try:
-                if session_proxy:
-                    proxy_dict = scripts.get_proxy_dict(session_proxy=session_proxy)
+                if self.proxy:
+                    proxy_dict = scripts.get_proxy_dict(session_proxy=self.proxy)
                 else:
                     proxy_dict: None = None
 
@@ -60,9 +63,9 @@ class Clicker:
                     with_tg = False
                     try:
                         await self.client.connect()
-                    except Exception as er:
-                        logger.error(f"{self.session_name} | Ошибка при подключении к сессии: {er}")
-                        await asyncio.sleep(delay=3)
+                    except:
+                        self.client.proxy = None
+                        await self.client.connect()
 
                 web_view = await self.client.invoke(
                     functions.messages.RequestWebView(
@@ -96,7 +99,7 @@ class Clicker:
         while True:
             try:
                 response: aiohttp.ClientResponse = await client.get(
-                    url='https://clicker-api.joincommunity.xyz/clicker/profile')
+                    url='https://clicker-api.joincommunity.xyz/clicker/profile', proxy=self.proxy)
 
                 status_code = response.status
                 try:
@@ -141,6 +144,7 @@ class Clicker:
 
                 response: aiohttp.ClientResponse = await client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
+                    proxy=self.proxy,
                     json=json_data)
 
                 status_code = response.status
@@ -180,9 +184,11 @@ class Clicker:
                 await asyncio.sleep(delay=3)
 
     async def get_merged_list(self, client: aiohttp.ClientSession) -> dict | None:
+        response = None
+
         try:
             response: aiohttp.ClientResponse = await client.get(
-                url='https://clicker-api.joincommunity.xyz/clicker/store/merged')
+                url='https://clicker-api.joincommunity.xyz/clicker/store/merged', proxy=self.proxy)
 
             response_json = await response.json(content_type=None)
             if response_json.get('ok'):
@@ -202,10 +208,13 @@ class Clicker:
             await asyncio.sleep(delay=3)
 
     async def buy_item(self, client: aiohttp.ClientSession, item_id: int | str) -> bool:
+        response = None
+
         try:
             response: aiohttp.ClientResponse = await client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/store/buy/{item_id}',
                 headers={'accept-language': 'ru-RU,ru;q=0.9'},
+                proxy=self.proxy,
                 json=False)
 
             if (await response.json(content_type=None)).get('ok'):
@@ -226,10 +235,13 @@ class Clicker:
             return False
 
     async def activate_turbo(self, client: aiohttp.ClientSession) -> int | None:
+        response = None
+
         try:
             response: aiohttp.ClientResponse = await client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/core/active-turbo',
                 headers={'accept-language': 'ru-RU,ru;q=0.9'},
+                proxy=self.proxy,
                 json=False)
 
             return (await response.json(content_type=None))['data'][0].get('multiple', 1)
@@ -245,10 +257,13 @@ class Clicker:
             return None
 
     async def activate_task(self, client: aiohttp.ClientSession, task_id: int | str) -> bool | None:
+        response = None
+
         try:
             response: aiohttp.ClientResponse = await client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/task/{task_id}',
                 headers={'accept-language': 'ru-RU,ru;q=0.9'},
+                proxy=self.proxy,
                 json=False)
 
             if (await response.json(content_type=None)).get('ok'):
@@ -276,9 +291,11 @@ class Clicker:
         turbo_times_count: int = 0
         full_energy_times_count: int = 0
 
+        response = None
+
         try:
             response: aiohttp.ClientResponse = await client.get(
-                url=f'https://clicker-api.joincommunity.xyz/clicker/task/combine-completed')
+                url=f'https://clicker-api.joincommunity.xyz/clicker/task/combine-completed', proxy=self.proxy)
 
             for current_buff in (await response.json(content_type=None))['data']:
                 if current_buff['taskId'] == 3:
@@ -306,17 +323,22 @@ class Clicker:
             await asyncio.sleep(delay=3)
             return False, False
 
+    async def check_proxy(self) -> None:
+        try:
+            async with aiohttp.request('GET', 'https://httpbin.org/ip', proxy=self.proxy, timeout=5) as response:
+                ip = (await response.json()).get('origin')
+                logger.info(f"{self.session_name} | Proxy IP: {ip}")
+        except Exception as er:
+            logger.error(f"{self.session_name} | Proxy: {self.proxy} | Error: {er}")
+
     @staticmethod
     async def close_connectors(*connectors: aiohttp.TCPConnector):
         for connector in connectors:
             try:
-                if connector:
-                    await connector.close() if not connector.closed else ...
-                ...
-            except:
-                ...
+                if connector: await connector.close() if not connector.closed else ...
+            except: ...
 
-    async def run(self, proxy: str | None = None):
+    async def run(self):
         access_token_created_time: float = 0
         tg_web_data: str | None = None
         click_hash: str | None = None
@@ -326,18 +348,20 @@ class Clicker:
         ssl_context = TLSv1_3_BYPASS.create_ssl_context()
 
         ssl_conn = aiohttp.TCPConnector(ssl=ssl_context)
-        proxy_conn = ProxyConnector.from_url(url=proxy) if proxy else None
 
         client = aiohttp.ClientSession(
-            connector_owner=proxy_conn,
             connector=ssl_conn,
-            headers=headers)
+            headers=headers
+        )
+
+        if self.proxy:
+            await self.check_proxy()
 
         try:
             while True:
                 try:
                     if time() - access_token_created_time >= (settings.SLEEP_TO_UPDATE_USER_DATA * 60):
-                        tg_web_data: str = await self.get_tg_web_data(session_proxy=proxy)
+                        tg_web_data: str = await self.get_tg_web_data()
 
                         access_token: str = await self.get_access_token(client=client, tg_web_data=tg_web_data)
 
@@ -379,7 +403,7 @@ class Clicker:
                             logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
                             await asyncio.sleep(delay=35)
 
-                            await self.close_connectors(client, ssl_conn, proxy_conn)
+                            await self.close_connectors(client, ssl_conn)
                             access_token_created_time = 0
 
                             raise BadRequestStatus()
@@ -389,7 +413,7 @@ class Clicker:
                             logger.info(f"{self.session_name} | Сплю {settings.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
                             await asyncio.sleep(delay=settings.SLEEP_AFTER_FORBIDDEN_STATUS)
 
-                            await self.close_connectors(client, ssl_conn, proxy_conn)
+                            await self.close_connectors(client, ssl_conn)
                             access_token_created_time = 0
 
                             raise ForbiddenStatus()
@@ -597,11 +621,11 @@ class Clicker:
                     await asyncio.sleep(delay=random_sleep_time)
 
         except InvalidSession as error:
-            await self.close_connectors(client, ssl_conn, proxy_conn)
+            await self.close_connectors(client, ssl_conn)
             raise error
 
         except Exception as error:
-            await self.close_connectors(client, ssl_conn, proxy_conn)
+            await self.close_connectors(client, ssl_conn)
 
             logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
             await asyncio.sleep(delay=3)
@@ -611,7 +635,7 @@ async def run_clicker(session_name: str, client: Client, proxy: str | None = Non
     try:
         sys.setrecursionlimit(100000)
 
-        await Clicker(session_name=session_name, client=client).run(proxy=proxy)
+        await Clicker(session_name=session_name, client=client, proxy=proxy).run()
 
     except (BadRequestStatus, ForbiddenStatus):
         await run_clicker(session_name=session_name, client=client, proxy=proxy)
