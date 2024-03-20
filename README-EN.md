@@ -1,6 +1,7 @@
 [<img src="https://img.shields.io/badge/Telegram-%40Me-orange">](https://t.me/sho6ot)
 
-![alt text](https://i.imgur.com/PDYwSJ9.png)
+
+![img1](.github/images/img1.png)
 
 > 🇷🇺 README на русском доступен [здесь](README.md)
 
