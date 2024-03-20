@@ -325,7 +325,7 @@ class Clicker:
 
     async def check_proxy(self) -> None:
         try:
-            async with aiohttp.request('GET', 'https://httpbin.org/ip', proxy=self.proxy, timeout=5) as response:
+            async with aiohttp.request('GET', 'https://httpbin.org/ip', proxy=self.proxy, timeout=aiohttp.ClientTimeout(5)) as response:
                 ip = (await response.json()).get('origin')
                 logger.info(f"{self.session_name} | Proxy IP: {ip}")
         except Exception as er:
