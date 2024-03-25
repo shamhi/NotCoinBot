@@ -1,4 +1,0 @@
-17:59:50 | SUCCESS  | 162 - name1 | Успешно сделал Click | Balance: 7777369 (+592) | Total Coins: 8123573
-17:59:51 | INFO     | 594 - name1 | Сплю 21 сек.
-18:00:22 | SUCCESS  | 162 - name2 | Успешно сделал Click | Balance: 9726817 (+392) | Total Coins: 12948687
-18:00:23 | INFO     | 594 - name2 | Сплю 16 сек.
