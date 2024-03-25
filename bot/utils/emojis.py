@@ -1,4 +1,19 @@
 import random
+from enum import Enum
+
+
+class StaticEmoji(str, Enum):
+    ACCEPT = '<emoji id=5206607081334906820>✔️</emoji>'
+    DENY = '<emoji id=5210952531676504517>❌</emoji>'
+    WARNING = '<emoji id=5447644880824181073>⚠️</emoji>'
+    LOUDSPEAKER = '<emoji id=5424818078833715060>📣</emoji>'
+    FLAG = '<emoji id=5222444124698853913>🔖</emoji>'
+    SCRAP = '<emoji id=5397782960512444700>📌</emoji>'
+    ARROW = '<emoji id=5416117059207572332>➡️</emoji>'
+    PLUS = '<emoji id=5397916757333654639>➕</emoji>'
+    DOLLAR = '<emoji id=5409048419211682843>💵</emoji>'
+    START = '<emoji id=5416081784641168838>🟢</emoji>'
+    STOP = '<emoji id=5411225014148014586>🔴</emoji>'
 
 
 def get_random_reaction():
@@ -72,18 +87,17 @@ warnings = [
 ]
 
 nums = {
-    0: '<emoji id=5305749482170758709>0️⃣</emoji>',
-    1: '<emoji id=5305763715692377402>1️⃣</emoji>',
-    2: '<emoji id=5307907239380528763>2️⃣</emoji>',
-    3: '<emoji id=5305783000095537258>3️⃣</emoji>',
-    4: '<emoji id=5305255243104138538>4️⃣</emoji>',
-    5: '<emoji id=5305288155438526869>5️⃣</emoji>',
-    6: '<emoji id=5305642863902604489>6️⃣</emoji>',
-    7: '<emoji id=5305603955793867793>7️⃣</emoji>',
-    8: '<emoji id=5305371288825509083>8️⃣</emoji>',
-    9: '<emoji id=5307703499016910744>9️⃣</emoji>',
+    0: '<emoji id=5305542129739642017>🔠</emoji>',
+    1: '<emoji id=5305481377427240126>🔠</emoji>',
+    2: '<emoji id=5305689266729268251>🔠</emoji>',
+    3: '<emoji id=5305416115399177518>🔠</emoji>',
+    4: '<emoji id=5305637765776422206>🔠</emoji>',
+    5: '<emoji id=5303134895059517245>🔠</emoji>',
+    6: '<emoji id=5305397569730394749>🔠</emoji>',
+    7: '<emoji id=5302991894123394705>🔠</emoji>',
+    8: '<emoji id=5303267996096019267>🔠</emoji>',
+    9: '<emoji id=5303436071051213525>🔠</emoji>',
 }
-
 
 loads = [
     "<emoji id=5307723788442410997>🫥</emoji>",
@@ -127,3 +141,7 @@ def rdeny():
 
 def rwarning():
     return random.choice(warnings)
+
+
+def num(n):
+    return nums[int(n)]

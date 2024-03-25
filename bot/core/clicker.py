@@ -12,24 +12,28 @@ from pyrogram import Client
 from pyrogram.raw import functions
 
 from config import settings
-from bot.exceptions import InvalidSession, TurboExpired, BadRequestStatus, ForbiddenStatus
-from bot.utils import eval_js, scripts
 from .headers import headers
 from .TLS import TLSv1_3_BYPASS
+from bot.utils import eval_js, scripts
+from bot.utils.emojis import StaticEmoji
+from bot.exceptions import InvalidSession, TurboExpired, BadRequestStatus
+from db.functions import (start_statistics, add_request_status, update_end_balance, get_request_statuses,
+                          get_session_id, after_send_warning)
 
 
 class Clicker:
-    def __init__(self, session_name: str, client: Client, proxy: str):
-        self.session_name: str = session_name
-        self.client: Client = client
+    def __init__(self, session_name: str, tg_client: Client, proxy: str):
+        self.session_name = session_name
+        self.tg_client = tg_client
         self.proxy = proxy
+        self.with_tg = True if tg_client.is_connected else False
 
-    async def get_access_token(self, client: aiohttp.ClientSession, tg_web_data: str) -> str:
+    async def get_access_token(self, http_client: aiohttp.ClientSession, tg_web_data: str) -> str:
         while True:
             response = None
 
             try:
-                response: aiohttp.ClientResponse = await client.post(
+                response: aiohttp.ClientResponse = await http_client.post(
                     url='https://clicker-api.joincommunity.xyz/auth/webapp-session',
                     proxy=self.proxy,
                     json={'webAppData': tg_web_data})
@@ -53,52 +57,47 @@ class Clicker:
                 if self.proxy:
                     proxy_dict = scripts.get_proxy_dict(session_proxy=self.proxy)
                 else:
-                    proxy_dict: None = None
+                    proxy_dict = None
 
-                self.client.proxy = proxy_dict
+                self.tg_client.proxy = proxy_dict
 
-                with_tg = True
-
-                if not self.client.is_connected:
-                    with_tg = False
+                if self.with_tg is False:
                     try:
-                        await self.client.connect()
+                        await self.tg_client.connect()
+                        logger.debug(f"{self.session_name} | {(await self.tg_client.get_me()).id}")
                     except:
-                        self.client.proxy = None
-                        await self.client.connect()
+                        self.tg_client.proxy = None
+                        await self.tg_client.connect()
 
-                web_view = await self.client.invoke(
+                web_view = await self.tg_client.invoke(
                     functions.messages.RequestWebView(
-                        peer=await self.client.resolve_peer('notcoin_bot'),
-                        bot=await self.client.resolve_peer('notcoin_bot'),
+                        peer=await self.tg_client.resolve_peer('notcoin_bot'),
+                        bot=await self.tg_client.resolve_peer('notcoin_bot'),
                         platform='android',
                         from_bot_menu=False,
                         url='https://clicker.joincommunity.xyz/clicker'
                     )
                 )
 
-                if with_tg is False:
-                    await self.client.disconnect()
+                if self.with_tg is False:
+                    await self.tg_client.disconnect()
 
                 auth_url = web_view.url
 
-                tg_web_data: str = unquote(
+                tg_web_data = unquote(
                     string=unquote(
                         string=auth_url.split('tgWebAppData=', maxsplit=1)[1].split('&tgWebAppVersion', maxsplit=1)[0]))
 
                 return tg_web_data
 
-            except InvalidSession as error:
-                raise error
-
             except Exception as error:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при авторизации: {error}')
                 await asyncio.sleep(delay=3)
 
-    async def get_profile_data(self, client: aiohttp.ClientSession) -> dict:
+    async def get_profile_data(self, http_client: aiohttp.ClientSession) -> dict:
         while True:
             try:
-                response: aiohttp.ClientResponse = await client.get(
+                response: aiohttp.ClientResponse = await http_client.get(
                     url='https://clicker-api.joincommunity.xyz/clicker/profile', proxy=self.proxy)
 
                 status_code = response.status
@@ -120,14 +119,14 @@ class Clicker:
 
     async def send_clicks(
             self,
-            client: aiohttp.ClientSession,
+            http_client: aiohttp.ClientSession,
             clicks_count: int,
             tg_web_data: str,
             balance: int,
             total_coins: str | int,
-            click_hash: str | None = None,
-            turbo: bool | None = None
-    ) -> tuple[int | str, int | str | None, int | None, int | None, bool | None]:
+            click_hash: str | None,
+            turbo: bool | None
+    ) -> tuple[str, int | None, int | None, int | None, bool | None]:
         while True:
             try:
                 json_data: dict = {
@@ -137,18 +136,18 @@ class Clicker:
                 }
 
                 if click_hash:
-                    json_data['hash']: str = click_hash
+                    json_data['hash'] = click_hash
 
                 if turbo:
-                    json_data['turbo']: bool = True
+                    json_data['turbo'] = True
 
-                response: aiohttp.ClientResponse = await client.post(
+                response: aiohttp.ClientResponse = await http_client.post(
                     url='https://clicker-api.joincommunity.xyz/clicker/core/click',
                     proxy=self.proxy,
                     json=json_data)
 
-                status_code = response.status
-                if not str(status_code).startswith('2'):
+                status_code = str(response.status)
+                if not status_code.startswith('2'):
                     return status_code, None, None, None, None
 
                 response_json: dict = await response.json(content_type=None)
@@ -170,11 +169,11 @@ class Clicker:
                     logger.success(f'{self.session_name} | Успешно сделал Click | Balance: '
                                    f'{balance + clicks_count} (+{clicks_count}) | Total Coins: {total_coins}')
 
-                    next_hash: int | None = eval_js(
-                        function=b64decode((await response.json())['data'][0]['hash'][0]).decode())
+                    next_hash = eval_js(
+                        function=b64decode(response_json['data'][0]['hash'][0]).decode())
 
                     return (status_code, balance + clicks_count, available_coins, next_hash,
-                            (await response.json())['data'][0]['turboTimes'] > 0)
+                            response_json['data'][0]['turboTimes'] > 0)
 
                 logger.error(f'{self.session_name} | Не удалось сделать Click, ответ: {await response.text()}')
                 return status_code, None, None, None, None
@@ -183,11 +182,11 @@ class Clicker:
                 logger.error(f'{self.session_name} | Неизвестная ошибка при попытке сделать Click: {error}')
                 await asyncio.sleep(delay=3)
 
-    async def get_merged_list(self, client: aiohttp.ClientSession) -> dict | None:
+    async def get_merged_list(self, http_client: aiohttp.ClientSession) -> dict | None:
         response = None
 
         try:
-            response: aiohttp.ClientResponse = await client.get(
+            response: aiohttp.ClientResponse = await http_client.get(
                 url='https://clicker-api.joincommunity.xyz/clicker/store/merged', proxy=self.proxy)
 
             response_json = await response.json(content_type=None)
@@ -207,11 +206,11 @@ class Clicker:
 
             await asyncio.sleep(delay=3)
 
-    async def buy_item(self, client: aiohttp.ClientSession, item_id: int | str) -> bool:
+    async def buy_item(self, http_client: aiohttp.ClientSession, item_id: int | str) -> bool:
         response = None
 
         try:
-            response: aiohttp.ClientResponse = await client.post(
+            response: aiohttp.ClientResponse = await http_client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/store/buy/{item_id}',
                 headers={'accept-language': 'ru-RU,ru;q=0.9'},
                 proxy=self.proxy,
@@ -234,11 +233,11 @@ class Clicker:
             await asyncio.sleep(delay=3)
             return False
 
-    async def activate_turbo(self, client: aiohttp.ClientSession) -> int | None:
+    async def activate_turbo(self, http_client: aiohttp.ClientSession) -> int | None:
         response = None
 
         try:
-            response: aiohttp.ClientResponse = await client.post(
+            response: aiohttp.ClientResponse = await http_client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/core/active-turbo',
                 headers={'accept-language': 'ru-RU,ru;q=0.9'},
                 proxy=self.proxy,
@@ -256,11 +255,11 @@ class Clicker:
             await asyncio.sleep(delay=3)
             return None
 
-    async def activate_task(self, client: aiohttp.ClientSession, task_id: int | str) -> bool | None:
+    async def activate_task(self, http_client: aiohttp.ClientSession, task_id: int | str) -> bool | None:
         response = None
 
         try:
-            response: aiohttp.ClientResponse = await client.post(
+            response: aiohttp.ClientResponse = await http_client.post(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/task/{task_id}',
                 headers={'accept-language': 'ru-RU,ru;q=0.9'},
                 proxy=self.proxy,
@@ -284,28 +283,28 @@ class Clicker:
             await asyncio.sleep(delay=3)
             return False
 
-    async def get_free_buffs_data(self, client: aiohttp.ClientSession) -> tuple[bool, bool]:
-        max_turbo_times: int = 3
-        max_full_energy_times: int = 3
+    async def get_free_buffs_data(self, http_client: aiohttp.ClientSession) -> tuple[bool, bool]:
+        max_turbo_times = 3
+        max_full_energy_times = 3
 
-        turbo_times_count: int = 0
-        full_energy_times_count: int = 0
+        turbo_times_count = 0
+        full_energy_times_count = 0
 
         response = None
 
         try:
-            response: aiohttp.ClientResponse = await client.get(
+            response: aiohttp.ClientResponse = await http_client.get(
                 url=f'https://clicker-api.joincommunity.xyz/clicker/task/combine-completed', proxy=self.proxy)
 
             for current_buff in (await response.json(content_type=None))['data']:
                 if current_buff['taskId'] == 3:
-                    max_turbo_times: int = current_buff['task']['max']
+                    max_turbo_times = current_buff['task']['max']
 
                     if current_buff['task']['status'] == 'active':
                         turbo_times_count += 1
 
                 elif current_buff['taskId'] == 2:
-                    max_full_energy_times: int = current_buff['task']['max']
+                    max_full_energy_times = current_buff['task']['max']
 
                     if current_buff['task']['status'] == 'active':
                         full_energy_times_count += 1
@@ -329,8 +328,8 @@ class Clicker:
                                        timeout=aiohttp.ClientTimeout(5)) as response:
                 ip = (await response.json()).get('origin')
                 logger.info(f"{self.session_name} | Proxy IP: {ip}")
-        except Exception as er:
-            logger.error(f"{self.session_name} | Proxy: {self.proxy} | Error: {er}")
+        except Exception as error:
+            logger.error(f"{self.session_name} | Proxy: {self.proxy} | Error: {error}")
 
     @staticmethod
     async def close_connectors(*connectors: aiohttp.TCPConnector):
@@ -340,18 +339,36 @@ class Clicker:
             except:
                 ...
 
+    async def send_warning(self, bad_statuses_count: int):
+        try:
+            if self.with_tg is False:
+                await self.tg_client.connect()
+
+            await self.tg_client.send_message(chat_id='me',
+                                              text=f'<b>{StaticEmoji.WARNING}Внимание!!!\n\n'
+                                                   f'Достигнуто количество безуспешных кликов: {bad_statuses_count}\n\n'
+                                                   f'Для остановки бота, введите <code>/click off</code></b>')
+
+            if self.with_tg is False:
+                await self.tg_client.disconnect()
+
+        except Exception as error:
+            logger.error(f'{self.session_name} | Неизвестная ошибка при отправки предупреждения: {error}')
+            await asyncio.sleep(delay=3)
+
     async def run(self):
-        access_token_created_time: float = 0
-        tg_web_data: str | None = None
-        click_hash: str | None = None
-        active_turbo: bool = False
-        turbo_multiplier: int = 1
+        access_token_created_time = 0
+        tg_web_data = None
+        click_hash = None
+        session_id = None
+        started_stat = False
+        active_turbo = False
+        turbo_multiplier = 1
 
         ssl_context = TLSv1_3_BYPASS.create_ssl_context()
-
         ssl_conn = aiohttp.TCPConnector(ssl=ssl_context)
 
-        client = aiohttp.ClientSession(
+        http_client = aiohttp.ClientSession(
             connector=ssl_conn,
             headers=headers
         )
@@ -363,95 +380,112 @@ class Clicker:
             while True:
                 try:
                     if time() - access_token_created_time >= (settings.SLEEP_TO_UPDATE_USER_DATA * 60):
-                        tg_web_data: str = await self.get_tg_web_data()
+                        tg_web_data = await self.get_tg_web_data()
 
-                        access_token: str = await self.get_access_token(client=client, tg_web_data=tg_web_data)
+                        access_token = await self.get_access_token(http_client=http_client, tg_web_data=tg_web_data)
 
-                        client.headers['Authorization']: str = f'Bearer {access_token}'
-                        headers['Authorization']: str = f'Bearer {access_token}'
+                        http_client.headers['Authorization'] = f'Bearer {access_token}'
+                        headers['Authorization'] = f'Bearer {access_token}'
 
-                        access_token_created_time: float = time()
+                        access_token_created_time = time()
 
-                    profile_data: dict = await self.get_profile_data(client=client)
+                    profile = await self.get_profile_data(http_client=http_client)
+                    profile_data = profile['data'][0]
+
+                    start_balance = int(profile_data['balanceCoins'])
+                    total_coins = int(profile_data['totalCoins'])
+                    available_coins = profile_data['availableCoins']
+                    multipleClicks = profile_data['multipleClicks']
+
+                    if started_stat is False:
+                        session_id = await get_session_id(session_name=self.session_name)
+                        await start_statistics(session_id=session_id, start_balance=start_balance)
+                        started_stat = True
 
                     if not active_turbo:
-                        if settings.MIN_CLICKS_COUNT > floor(profile_data['data'][0]['availableCoins'] /
-                                                             profile_data['data'][0]['multipleClicks']):
+                        if settings.MIN_CLICKS_COUNT > floor(available_coins / multipleClicks):
                             logger.info(f'{self.session_name} | Недостаточно монет для клика')
+
+                            await asyncio.sleep(delay=3)
                             continue
 
-                    if floor(profile_data['data'][0]['availableCoins'] /
-                             profile_data['data'][0]['multipleClicks']) < 160:
-                        max_clicks_count: int = floor(profile_data['data'][0]['availableCoins'] /
-                                                      profile_data['data'][0]['multipleClicks'])
+                    request_statuses = await get_request_statuses(session_id=session_id)
+                    bad_statuses_count = scripts.get_bad_statuses_count(request_statuses=request_statuses)
 
+                    if bad_statuses_count >= settings.MAX_BAD_STATUSES:
+                        await self.send_warning(bad_statuses_count=bad_statuses_count)
+                        await after_send_warning(session_id=session_id)
+
+                    if floor(available_coins / multipleClicks) < 160:
+                        max_clicks_count = floor(available_coins / multipleClicks)
                     else:
-                        max_clicks_count: int = 160
+                        max_clicks_count = 160
 
-                    clicks_count: int = (randint(a=settings.MIN_CLICKS_COUNT, b=max_clicks_count) *
-                                         profile_data['data'][0]['multipleClicks'] * turbo_multiplier)
+                    clicks_count = (randint(a=settings.MIN_CLICKS_COUNT,
+                                            b=max_clicks_count) * multipleClicks * turbo_multiplier)
 
                     try:
                         status_code, new_balance, available_coins, click_hash, have_turbo = \
-                            await self.send_clicks(client=client,
-                                                   clicks_count=int(clicks_count),
+                            await self.send_clicks(http_client=http_client,
+                                                   clicks_count=clicks_count,
                                                    tg_web_data=tg_web_data,
-                                                   balance=int(profile_data['data'][0]['balanceCoins']),
-                                                   total_coins=profile_data['data'][0]['totalCoins'],
+                                                   balance=start_balance,
+                                                   total_coins=total_coins,
                                                    click_hash=click_hash,
                                                    turbo=active_turbo)
 
-                        if status_code == 400:
+                        await add_request_status(session_id=session_id, status=status_code)
+
+                        if status_code == '400':
                             logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
                             await asyncio.sleep(delay=35)
 
-                            await self.close_connectors(client, ssl_conn)
-                            access_token_created_time = 0
+                            await self.close_connectors(http_client, ssl_conn)
 
                             raise BadRequestStatus()
 
-                        if status_code == 403:
+                        if status_code == '403':
                             logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
                             logger.info(f"{self.session_name} | Сплю {settings.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
                             await asyncio.sleep(delay=settings.SLEEP_AFTER_FORBIDDEN_STATUS)
 
-                            await self.close_connectors(client, ssl_conn)
-                            access_token_created_time = 0
+                            continue
 
-                            raise ForbiddenStatus()
-
-                        if not str(status_code).startswith('2'):
+                        if not status_code.startswith('2'):
                             logger.error(f"{self.session_name} | Неизвестный статус ответа: {status_code}")
                             await asyncio.sleep(delay=15)
 
                             continue
 
                     except TurboExpired:
-                        active_turbo: bool = False
-                        turbo_multiplier: int = 1
+                        active_turbo = False
+                        turbo_multiplier = 1
 
+                        await asyncio.sleep(delay=3)
                         continue
 
                     if have_turbo:
-                        random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
-                                                         b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
+                        random_sleep_time = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
+                                                    b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
 
                         logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией Turbo')
 
                         await asyncio.sleep(delay=random_sleep_time)
 
-                        turbo_multiplier: int | None = await self.activate_turbo(client=client)
+                        turbo_multiplier = await self.activate_turbo(http_client=http_client)
 
                         if turbo_multiplier:
                             logger.success(f'{self.session_name} | Успешно активировал Turbo: x{turbo_multiplier}')
 
-                            active_turbo: bool = True
+                            active_turbo = True
                             continue
                         else:
-                            turbo_multiplier: int = 1
+                            turbo_multiplier = 1
 
                     if new_balance:
-                        merged_data: dict | None = await self.get_merged_list(client=client)
+                        await update_end_balance(session_id=session_id, new_balance=new_balance)
+
+                        merged_data: dict | None = await self.get_merged_list(http_client=http_client)
 
                         if merged_data:
                             for current_merge in merged_data['data']:
@@ -459,15 +493,15 @@ class Clicker:
                                     if not settings.AUTO_BUY_ENERGY_BOOST:
                                         continue
 
-                                    energy_price: int | None = current_merge['price']
-                                    energy_count: int | None = current_merge['count']
+                                    energy_price = current_merge['price']
+                                    energy_count = current_merge['count']
 
                                     if energy_count >= settings.MAX_ENERGY_BOOST:
                                         continue
 
                                     if new_balance >= energy_price and current_merge['max'] > current_merge['count']:
-                                        sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                                                              b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+                                        sleep_before_buy_merge = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                                         b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                         logger.info(f'{self.session_name} | Улучшаем Energy Boost до '
                                                     f'{energy_count + 1} lvl')
@@ -476,7 +510,7 @@ class Clicker:
 
                                         await asyncio.sleep(delay=sleep_before_buy_merge)
 
-                                        if await self.buy_item(client=client, item_id=1):
+                                        if await self.buy_item(http_client=http_client, item_id=1):
                                             logger.success(f'{self.session_name} | Успешно купил Energy '
                                                            'Boost')
                                             continue
@@ -485,15 +519,15 @@ class Clicker:
                                     if not settings.AUTO_BUY_SPEED_BOOST:
                                         continue
 
-                                    speed_price: int | None = current_merge['price']
-                                    speed_count: int | None = current_merge['count']
+                                    speed_price = current_merge['price']
+                                    speed_count = current_merge['count']
 
                                     if speed_count >= settings.MAX_SPEED_BOOST:
                                         continue
 
                                     if new_balance >= speed_price and current_merge['max'] > current_merge['count']:
-                                        sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                                                              b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+                                        sleep_before_buy_merge = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                                         b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                         logger.info(f'{self.session_name} | Улучшаем Speed Boost до '
                                                     f'{speed_count + 1} lvl')
@@ -502,7 +536,7 @@ class Clicker:
 
                                         await asyncio.sleep(delay=sleep_before_buy_merge)
 
-                                        if await self.buy_item(client=client, item_id=2):
+                                        if await self.buy_item(http_client=http_client, item_id=2):
                                             logger.success(f'{self.session_name} | Успешно купил Speed Boost')
                                             continue
 
@@ -510,15 +544,15 @@ class Clicker:
                                     if not settings.AUTO_BUY_CLICK_BOOST:
                                         continue
 
-                                    click_price: int | None = current_merge['price']
-                                    click_count: int | None = current_merge['count']
+                                    click_price = current_merge['price']
+                                    click_count = current_merge['count']
 
                                     if click_count >= settings.MAX_CLICK_BOOST:
                                         continue
 
                                     if new_balance >= click_price and current_merge['max'] > current_merge['count']:
-                                        sleep_before_buy_merge: int = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
-                                                                              b=settings.SLEEP_BEFORE_BUY_MERGE[1])
+                                        sleep_before_buy_merge = randint(a=settings.SLEEP_BEFORE_BUY_MERGE[0],
+                                                                         b=settings.SLEEP_BEFORE_BUY_MERGE[1])
 
                                         logger.info(f'{self.session_name} | Улучшаем Click Booster до '
                                                     f'{click_count + 1} lvl')
@@ -527,29 +561,26 @@ class Clicker:
 
                                         await asyncio.sleep(delay=sleep_before_buy_merge)
 
-                                        if await self.buy_item(client=client, item_id=3):
+                                        if await self.buy_item(http_client=http_client, item_id=3):
                                             logger.success(f'{self.session_name} | Успешно купил Click Boost')
                                             continue
 
-                                elif current_merge['id'] == 4:
-                                    ...
+                    free_daily_turbo, free_daily_full_energy = await self.get_free_buffs_data(http_client=http_client)
 
-                    free_daily_turbo, free_daily_full_energy = await self.get_free_buffs_data(client=client)
                     min_available_coins = settings.MIN_AVAILABLE_COINS
 
                     if settings.ACTIVATE_DAILY_ENERGY:
                         if available_coins < min_available_coins:
                             if free_daily_full_energy:
-                                random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                                                 b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+                                random_sleep_time = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                                            b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
 
-                                logger.info(
-                                    f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
-                                    f'ежедневного Full Energy')
+                                logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией '
+                                            f'ежедневного Full Energy')
 
                                 await asyncio.sleep(delay=random_sleep_time)
 
-                                if await self.activate_task(client=client, task_id=2):
+                                if await self.activate_task(http_client=http_client, task_id=2):
                                     logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
 
                                     continue
@@ -571,34 +602,34 @@ class Clicker:
 
                     if settings.ACTIVATE_DAILY_TURBO:
                         if free_daily_turbo:
-                            random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
-                                                             b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
+                            random_sleep_time = randint(a=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[0],
+                                                        b=settings.SLEEP_BEFORE_ACTIVATE_FREE_BUFFS[1])
 
                             logger.info(
                                 f'{self.session_name} | Сплю {random_sleep_time} перед запросом ежедневного Turbo')
 
                             await asyncio.sleep(delay=random_sleep_time)
 
-                            if await self.activate_task(client=client, task_id=3):
+                            if await self.activate_task(http_client=http_client, task_id=3):
                                 logger.success(f'{self.session_name} | Успешно запросил ежедневное Turbo')
 
-                                random_sleep_time: int = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
-                                                                 b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
+                                random_sleep_time = randint(a=settings.SLEEP_BEFORE_ACTIVATE_TURBO[0],
+                                                            b=settings.SLEEP_BEFORE_ACTIVATE_TURBO[1])
 
                                 logger.info(f'{self.session_name} | Сплю {random_sleep_time} перед активацией Turbo')
 
                                 await asyncio.sleep(delay=random_sleep_time)
 
-                                turbo_multiplier: int | None = await self.activate_turbo(client=client)
+                                turbo_multiplier = await self.activate_turbo(http_client=http_client)
 
                                 if turbo_multiplier:
                                     logger.success(f'{self.session_name} | Успешно активировал Turbo: '
                                                    f'x{turbo_multiplier}')
-                                    active_turbo: bool = True
+                                    active_turbo = True
                                     continue
 
                                 else:
-                                    turbo_multiplier: int = 1
+                                    turbo_multiplier = 1
 
                 except InvalidSession as error:
                     raise error
@@ -606,38 +637,38 @@ class Clicker:
                 except Exception as error:
                     logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
 
-                    random_sleep_time: int = randint(a=settings.SLEEP_BETWEEN_CLICK[0],
-                                                     b=settings.SLEEP_BETWEEN_CLICK[1])
+                    random_sleep_time = randint(a=settings.SLEEP_BETWEEN_CLICK[0],
+                                                b=settings.SLEEP_BETWEEN_CLICK[1])
 
                     logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
                     await asyncio.sleep(delay=random_sleep_time)
 
                 else:
-                    random_sleep_time: int = randint(a=settings.SLEEP_BETWEEN_CLICK[0],
-                                                     b=settings.SLEEP_BETWEEN_CLICK[1])
+                    random_sleep_time = randint(a=settings.SLEEP_BETWEEN_CLICK[0],
+                                                b=settings.SLEEP_BETWEEN_CLICK[1])
 
                     logger.info(f'{self.session_name} | Сплю {random_sleep_time} сек.')
                     await asyncio.sleep(delay=random_sleep_time)
 
         except InvalidSession as error:
-            await self.close_connectors(client, ssl_conn)
+            await self.close_connectors(http_client, ssl_conn)
             raise error
 
         except Exception as error:
-            await self.close_connectors(client, ssl_conn)
+            await self.close_connectors(http_client, ssl_conn)
 
             logger.error(f'{self.session_name} | Неизвестная ошибка: {error}')
             await asyncio.sleep(delay=3)
 
 
-async def run_clicker(session_name: str, client: Client, proxy: str | None = None) -> None:
+async def run_clicker(session_name: str, tg_client: Client, proxy: str | None = None) -> None:
     try:
         sys.setrecursionlimit(100000)
 
-        await Clicker(session_name=session_name, client=client, proxy=proxy).run()
+        await Clicker(session_name=session_name, tg_client=tg_client, proxy=proxy).run()
 
-    except (BadRequestStatus, ForbiddenStatus):
-        await run_clicker(session_name=session_name, client=client, proxy=proxy)
+    except BadRequestStatus:
+        await run_clicker(session_name=session_name, tg_client=tg_client, proxy=proxy)
 
     except InvalidSession:
         logger.error(f'{session_name} | Invalid Session')

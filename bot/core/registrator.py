@@ -2,9 +2,10 @@ import pyrogram
 from loguru import logger
 
 from config import settings
+from db.functions import register_session_to_db
 
 
-async def create_sessions() -> None:
+async def register_sessions() -> None:
     API_ID: int | str = settings.API_ID
     API_HASH: str = settings.API_HASH
 
@@ -16,7 +17,7 @@ async def create_sessions() -> None:
     if not session_name:
         return None
 
-    session: pyrogram.Client = pyrogram.Client(
+    session = pyrogram.Client(
         api_id=API_ID,
         api_hash=API_HASH,
         name=session_name,
@@ -25,5 +26,7 @@ async def create_sessions() -> None:
 
     async with session:
         user_data = await session.get_me()
+
+    await register_session_to_db(session_name=session_name, tg_id=user_data.id)
 
     logger.success(f'Успешно добавлена сессия @{user_data.username} | {user_data.first_name} {user_data.last_name}')

@@ -4,8 +4,10 @@ from pyrogram.raw.functions.messages import RequestWebView
 
 from bot.utils import scripts
 from bot.utils.logging import logger
-from bot.utils.emojis import rdeny, rcheck
-from bot.utils.launcher import clients, run_tasks
+from bot.utils.emojis import StaticEmoji
+from bot.utils.launcher import tg_clients, run_tasks
+from db.functions import (get_session_id, get_start_balance, get_end_balance, get_start_datetime, get_end_datetime,
+                          get_session_name)
 
 
 @Client.on_message(filters.me & filters.private & filters.chat('me') & filters.command('ncu', prefixes='/'))
@@ -24,8 +26,8 @@ async def get_notcoin_url(client: Client, message: Message):
 
 
 @Client.on_message(filters.me & filters.chat('me') & filters.command('click', prefixes='/'))
-@scripts.with_args('<b>This command does not work without arguments\n'
-                   'Type <code>/click on</code> to start or <code>/click off</code> to stop</b>')
+@scripts.with_args('<b>Эта команда не работает без аргументов\n'
+                   'Введите <code>/click on</code> для запуска или <code>/click off</code> для остановки</b>')
 async def launch_clicker(client: Client, message: Message):
     flag = scripts.get_command_args(message, 'click')
 
@@ -35,29 +37,48 @@ async def launch_clicker(client: Client, message: Message):
     if flag in flags_to_start:
         logger.info(f"Кликер запущен командой /click {flag}\n")
 
-        await message.edit(f"{rcheck()}<b>Clicker started!</b>")
-        await run_tasks(clients=clients)
-
+        await message.edit(f"<b>{StaticEmoji.ACCEPT} Кликер запущен! {StaticEmoji.START}</b>")
+        await run_tasks(tg_clients=tg_clients)
     elif flag in flags_to_stop:
         logger.info(f"Кликер остановлен командой /click {flag}\n")
 
-        status = await scripts.stop_task(client=client)
-        await message.edit(status)
-
+        await scripts.stop_tasks(client=client)
+        await message.edit(f'<b>{StaticEmoji.ACCEPT} Кликер остановлен! {StaticEmoji.STOP}</b>')
     else:
-        await message.edit(f"{rdeny()}<b>This command only accept the values: on/off | start/stop</b>")
+        await message.edit(f"<b>{StaticEmoji.DENY} Эта команда принимает только аргументы: on/off | start/stop</b>")
 
 
 @Client.on_message(filters.me & filters.chat('me') & filters.command('help', prefixes='/'))
-async def send_help_text(client: Client, message: Message):
-    await message.edit('Type <code>/click on</code> to start or <code>/click off</code> to stop</b>')
+async def send_help_text(_: Client, message: Message):
+    help_text = scripts.get_help_text()
+
+    await message.edit(text=help_text)
 
 
 @Client.on_message(filters.me & filters.chat('me') & filters.command('balance'))
 async def send_my_balance(client: Client, message: Message):
-    ...  # TODO: Soon
+    session_id = await get_session_id(tg_id=client.me.id)
+    balance = await get_end_balance(session_id=session_id)
+
+    balance_text = scripts.get_balance_text(balance=balance)
+
+    await message.edit(text=balance_text)
 
 
-@Client.on_message(filters.me & filters.chat('me') & filters.command('stats', prefixes='/'))
+@Client.on_message(filters.me & filters.chat('me') & filters.command('stat', prefixes='/'))
 async def send_stats(client: Client, message: Message):
-    ...  # TODO: Soon
+    session_id = await get_session_id(tg_id=client.me.id)
+    session_name = await get_session_name(session_id=session_id)
+
+    start_balance = await get_start_balance(session_id=session_id)
+    end_balance = await get_end_balance(session_id=session_id)
+    start_datetime = await get_start_datetime(session_id=session_id)
+    end_datetime = await get_end_datetime(session_id=session_id)
+
+    stat_text = scripts.get_stat_text(session_name=session_name,
+                                      start_balance=start_balance,
+                                      end_balance=end_balance,
+                                      start_datetime=start_datetime,
+                                      end_datetime=end_datetime)
+
+    await message.edit(text=stat_text)

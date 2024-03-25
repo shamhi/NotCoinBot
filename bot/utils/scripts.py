@@ -1,12 +1,13 @@
 import asyncio
 from typing import Union
+from datetime import datetime
 
 from pyrogram import Client
 from pyrogram.types import Message
 from better_proxy import Proxy
 from loguru import logger
 
-from bot.utils.emojis import rcheck
+from bot.utils.emojis import num, StaticEmoji
 
 
 def get_command_args(message: Union[Message, str], command: Union[str, list[str]] = None, prefixes: str = '/') -> str:
@@ -59,7 +60,58 @@ def get_proxy_dict(session_proxy: str | None) -> Proxy | None:
     return proxy_dict
 
 
-async def stop_task(client: Client = None) -> str:
+def get_bad_statuses_count(request_statuses: list[str]) -> int:
+    count = 0
+    for status in request_statuses:
+        if status.startswith('2'):
+            count = 0
+            continue
+
+        count += 1
+
+    return count
+
+
+def get_help_text():
+    return f"""<b>
+{StaticEmoji.FLAG} [Демо версия]
+
+{num(1)} /help - Выводит все доступные команды
+{num(2)} /click [on|start, off|stop] - Запускает или останавливает кликер
+{num(3)} /balance - выводит текущий баланс
+{num(4)} /stat - Выводит статистику запущенного кликера
+</b>"""
+
+
+def get_stat_text(session_name: str,
+                  start_balance: int,
+                  end_balance: int,
+                  start_datetime: datetime,
+                  end_datetime: datetime) -> str:
+    income = ''.join([num(n) for n in str(end_balance-start_balance)])
+    start_balance = ''.join([num(n) for n in str(start_balance)])
+    end_balance = ''.join([num(n) for n in str(end_balance)])
+    start_datetime = start_datetime.strftime("%Y-%m-%d %H:%M:%S")
+    end_datetime = end_datetime.strftime("%Y-%m-%d %H:%M:%S")
+
+    return f"""<b>
+{StaticEmoji.FLAG} [Демо версия]
+    
+{StaticEmoji.LOUDSPEAKER}Статистика {session_name} с {start_datetime} по {end_datetime}
+
+{StaticEmoji.SCRAP} Начальный баланс: {start_balance} {StaticEmoji.DOLLAR}
+{StaticEmoji.ARROW} Текущий баланс: {end_balance} {StaticEmoji.DOLLAR}
+{StaticEmoji.PLUS} Заработано: {income} {StaticEmoji.DOLLAR}
+</b>"""
+
+
+def get_balance_text(balance: int):
+    balance = ''.join([num(n) for n in str(balance)])
+
+    return f"<b>Ваш текущий баланс: {balance} {StaticEmoji.DOLLAR}</b>"
+
+
+async def stop_tasks(client: Client = None) -> None:
     if client:
         all_tasks = asyncio.all_tasks(loop=client.loop)
     else:
@@ -74,5 +126,3 @@ async def stop_task(client: Client = None) -> str:
             task.cancel()
         except:
             ...
-
-    return f'<b>{rcheck()}The clicker process has stopped</b>'

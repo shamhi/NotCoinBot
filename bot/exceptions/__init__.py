@@ -8,7 +8,3 @@ class TurboExpired(BaseException):
 
 class BadRequestStatus(BaseException):
     ...
-
-
-class ForbiddenStatus(BaseException):
-    ...

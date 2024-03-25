@@ -11,17 +11,18 @@ from better_proxy import Proxy
 from loguru._logger import Logger
 
 from config import settings
-from bot.core import run_clicker, create_sessions
+from bot.core import run_clicker, register_sessions
+from db.functions import check_sessions
 
 
-clients = []
+tg_clients = []
 
 
-def get_session_files() -> list[str]:
-    session_files = glob.glob('sessions/*.session')
-    session_files = [os.path.splitext(os.path.basename(file))[0] for file in session_files]
+def get_session_names() -> list[str]:
+    session_names = glob.glob('sessions/*.session')
+    session_names = [os.path.splitext(os.path.basename(file))[0] for file in session_names]
 
-    return session_files
+    return session_names
 
 
 def get_proxies() -> list[Proxy]:
@@ -39,13 +40,9 @@ def get_proxies() -> list[Proxy]:
 async def get_session_string(session_name: str) -> str | None:
     session = None
     for action in [SessionManager.from_pyrogram_file, SessionManager.from_telethon_file]:
-        try:
-            session = await action(f'sessions/{session_name}.session')
-        except Exception as ex:
-            print(ex)
-            ...
-        else:
-            break
+        try: session = await action(f'sessions/{session_name}.session')
+        except: ...
+        else: break
 
     if not session:
         return None
@@ -53,25 +50,27 @@ async def get_session_string(session_name: str) -> str | None:
     return session.to_pyrogram_string()
 
 
-async def get_clients(session_files: list[str]) -> list[Client]:
-    if not session_files:
+async def get_clients(session_names: list[str]) -> list[Client]:
+    if not session_names:
         raise FileNotFoundError("Not found session files")
 
     if not settings.API_ID or not settings.API_HASH:
         raise ValueError("API_ID and API_HASH not found in the .env file.")
 
-    global clients
+    global tg_clients
 
-    clients = [Client(
+    tg_clients = [Client(
         name=session_name,
         api_id=settings.API_ID,
         api_hash=settings.API_HASH,
         session_string=(await get_session_string(session_name=session_name)),
         workdir='sessions/',
         plugins=dict(root='bot/plugins')
-    ) for session_name in session_files]
+    ) for session_name in session_names]
 
-    return clients
+    await check_sessions(session_names=session_names, tg_clients=tg_clients)
+
+    return tg_clients
 
 
 async def start_process(logger: Logger) -> None:
@@ -80,10 +79,10 @@ async def start_process(logger: Logger) -> None:
 
     args = parser.parse_args()
 
-    session_files: list[str] = get_session_files()
+    session_names: list[str] = get_session_names()
     proxies: list[Proxy] = get_proxies()
 
-    logger.info(f"Обнаружено {len(session_files)} сессий / {len(proxies)} прокси")
+    logger.info(f"Обнаружено {len(session_names)} сессий / {len(proxies)} прокси")
 
     await asyncio.sleep(delay=.25)
 
@@ -96,37 +95,37 @@ async def start_process(logger: Logger) -> None:
     print()
 
     if user_action == 1:
-        await create_sessions()
+        await register_sessions()
 
     elif user_action == 2:
-        clients = await get_clients(session_files=session_files)
+        tg_clients = await get_clients(session_names=session_names)
 
-        logger.info(f"Бот запущен на {len(session_files)} сессиях.\n"
+        logger.info(f"Бот запущен на {len(session_names)} сессиях.\n"
                     f"Отправьте /help в чате Избранное/Saved Messages \n")
 
-        await compose(clients)
+        await compose(tg_clients)
 
     elif user_action == 3:
-        clients = await get_clients(session_files=session_files)
+        tg_clients = await get_clients(session_names=session_names)
 
         logger.info("Бот запущен без возможности управления через телеграмм")
 
-        await run_tasks(clients=clients)
+        await run_tasks(tg_clients=tg_clients)
 
     else:
         logger.error("Действие выбрано некорректно")
 
 
-async def run_tasks(clients: list[Client]):
-    session_files = get_session_files()
+async def run_tasks(tg_clients: list[Client]):
+    session_names = get_session_names()
     proxies = get_proxies()
     proxies_cycled = cycle(proxies) if proxies else None
 
     tasks: list = [
         asyncio.create_task(coro=run_clicker(
-            session_name=current_session_name, client=client, proxy=next(proxies_cycled) if proxies_cycled else None)
+            session_name=current_session_name, tg_client=client, proxy=next(proxies_cycled) if proxies_cycled else None)
         )
-        for client, current_session_name in zip(clients, session_files)
+        for client, current_session_name in zip(tg_clients, session_names)
     ]
 
     await asyncio.gather(*tasks)
