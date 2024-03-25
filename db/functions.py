@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pyrogram import Client
 from tortoise import Tortoise
+from tortoise.expressions import Q
 
 from db.models import Session, Statistic, Request
 
@@ -93,7 +94,7 @@ async def get_request_statuses(session_id: int) -> list[str]:
 
 async def after_send_warning(session_id: int) -> None:
     session = await Session.get(id=session_id)
-    await Request.filter(session=session, status__not_like='2%').update(send_warning=True)
+    await Request.filter(Q(session=session), ~Q(status__startswith='2')).update(send_warning=True)
 
 
 async def get_start_balance(session_id: int) -> int:
