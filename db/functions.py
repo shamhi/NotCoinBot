@@ -1,0 +1,6 @@
+
+
+
+class Database:
+    ...
+    # TODO: Statistics
