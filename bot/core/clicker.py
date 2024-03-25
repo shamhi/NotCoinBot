@@ -64,7 +64,6 @@ class Clicker:
                 if self.with_tg is False:
                     try:
                         await self.tg_client.connect()
-                        logger.debug(f"{self.session_name} | {(await self.tg_client.get_me()).id}")
                     except:
                         self.tg_client.proxy = None
                         await self.tg_client.connect()
