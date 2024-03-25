@@ -44,7 +44,7 @@
 ## Установка
 Вы можете скачать [**Репозиторий**](https://github.com/shamhi/NotCoinBot) клонированием на вашу систему и установкой необходимых зависимостей:
 ```shell
-~ >>> git clone https://github.com/shamhi/NotCoinBot.git 
+~ >>> git clone https://github.com/shamhi/NotCoinBot.git -b lite
 ~ >>> cd NotCoinBot
 
 # Linux

@@ -43,7 +43,7 @@
 ## Installation
 You can download the [**Git Repo**](https://github.com/shamhi/NotCoinBot) by cloning on your system and installing its requirements:
 ```
-~ >>> git clone https://github.com/shamhi/NotCoinBot.git 
+~ >>> git clone https://github.com/shamhi/NotCoinBot.git -b lite
 ~ >>> cd NotCoinBot
 
 #Linux
