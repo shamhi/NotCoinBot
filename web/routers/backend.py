@@ -15,8 +15,8 @@ api_router = APIRouter(prefix="/api/v1")
 @api_router.post(path='/clickOn')
 async def clicker_on():
     try:
-        session_files = launcher.get_session_files()
-        clients = await launcher.get_clients(session_files=session_files)
+        session_names = launcher.get_session_names()
+        clients = await launcher.get_clients(session_names=session_names)
 
         ...  # TODO: Soon
 
@@ -29,7 +29,7 @@ async def clicker_on():
 @api_router.post(path='/clickOff')
 async def clicker_on():
     try:
-        await scripts.stop_task()
+        await scripts.stop_tasks()
     except Exception as er:
         raise HTTPException(detail=er, status_code=500)
 
