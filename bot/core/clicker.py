@@ -16,7 +16,7 @@ from .headers import headers
 from .TLS import TLSv1_3_BYPASS
 from bot.utils import eval_js, scripts
 from bot.utils.emojis import StaticEmoji
-from bot.exceptions import InvalidSession, TurboExpired, BadRequestStatus
+from bot.exceptions import InvalidSession, TurboExpired
 from db.functions import (start_statistics, add_request_status, update_end_balance, get_request_statuses,
                           get_session_id, after_send_warning)
 
@@ -437,22 +437,21 @@ class Clicker:
 
                         if status_code == '400':
                             logger.warning(f"{self.session_name} | Недействительные данные: {status_code}")
-                            await asyncio.sleep(delay=35)
+                            logger.info(f"{self.session_name} | Сплю {settings.SLEEP_AFTER_BAD_STATUS} сек")
+                            await asyncio.sleep(delay=settings.SLEEP_AFTER_BAD_STATUS)
 
-                            await self.close_connectors(http_client, ssl_conn)
-
-                            raise BadRequestStatus()
+                            continue
 
                         if status_code == '403':
                             logger.warning(f"{self.session_name} | Доступ к API запрещен: {status_code}")
-                            logger.info(f"{self.session_name} | Сплю {settings.SLEEP_AFTER_FORBIDDEN_STATUS} сек")
-                            await asyncio.sleep(delay=settings.SLEEP_AFTER_FORBIDDEN_STATUS)
+                            logger.info(f"{self.session_name} | Сплю {settings.SLEEP_AFTER_BAD_STATUS} сек")
+                            await asyncio.sleep(delay=settings.SLEEP_AFTER_BAD_STATUS)
 
                             continue
 
                         if not status_code.startswith('2'):
                             logger.error(f"{self.session_name} | Неизвестный статус ответа: {status_code}")
-                            await asyncio.sleep(delay=15)
+                            await asyncio.sleep(delay=settings.SLEEP_AFTER_BAD_STATUS)
 
                             continue
 
@@ -580,13 +579,15 @@ class Clicker:
                                 await asyncio.sleep(delay=random_sleep_time)
 
                                 if await self.activate_task(http_client=http_client, task_id=2):
-                                    logger.success(f'{self.session_name} | Успешно запросил ежедневный Full Energy')
+                                    logger.success(f"{self.session_name} | Успешно запросил ежедневный Full Energy")
+                                    logger.info(f"{self.session_name} | Сплю 10 сек.")
+
+                                    await asyncio.sleep(delay=10)
 
                                     continue
 
                     if settings.SLEEP_BY_MIN_COINS:
                         if available_coins:
-
                             if available_coins < min_available_coins:
                                 sleep_time_to_min_coins = settings.SLEEP_BY_MIN_COINS_TIME
 
@@ -662,12 +663,7 @@ class Clicker:
 
 async def run_clicker(session_name: str, tg_client: Client, proxy: str | None = None) -> None:
     try:
-        sys.setrecursionlimit(100000)
-
         await Clicker(session_name=session_name, tg_client=tg_client, proxy=proxy).run()
-
-    except BadRequestStatus:
-        await run_clicker(session_name=session_name, tg_client=tg_client, proxy=proxy)
 
     except InvalidSession:
         logger.error(f'{session_name} | Invalid Session')
