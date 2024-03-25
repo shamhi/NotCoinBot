@@ -7,8 +7,10 @@ class Settings(BaseSettings):
     API_ID: int | str = ''
     API_HASH: str = ''
 
-    SERVER_HOST: str = "0.0.0.0"
+    SERVER_HOST: str = "127.0.0.1"
     SERVER_PORT: int = 63351
+
+    MAX_BAD_STATUSES: int = 10
 
     MIN_CLICKS_COUNT: int = 5
     MIN_AVAILABLE_COINS: int = 200
@@ -34,8 +36,8 @@ class Settings(BaseSettings):
 
     SLEEP_AFTER_FORBIDDEN_STATUS: int = 35
 
-    SLEEP_TO_UPDATE_USER_DATA: int = 60 * 5
-    SLEEP_BY_MIN_COINS_TIME: int = 60 * 5
+    SLEEP_TO_UPDATE_USER_DATA: int = 300
+    SLEEP_BY_MIN_COINS_TIME: int = 300
 
 
 settings = Settings()
