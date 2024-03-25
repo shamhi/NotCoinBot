@@ -20,6 +20,9 @@
 | Setting                              | Description                                                                                                                              |
 |--------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
 | **API_ID / API_HASH**                | Platform data for starting a Telegram session (default - Android)                                                                        |
+| **SERVER_HOST**                      | IP address on which the web application will be launched (e. g., 127.0.0.1)                                                              |
+| **SERVER_PORT**                      | Port on which the web application will be launched (e. g., 63351)                                                                        |
+| **MAX_BAD_STATUSES**                 | Maximum number of unsuccessful clicks, upon reaching which, a warning will be sent to Saved Messages (e. g., 10)                         |
 | **MIN_CLICKS_COUNT**                 | Minimum number of clicks per request (calculated without the multiplier, e.g., with a multiplier of x9: 1 click equals 9 coins, not one) |
 | **MIN_AVAILABLE_COINS**              | Minimum amount of coins at which a delay is triggered (e.g., 200)                                                                        |
 | **AUTO_BUY_ENERGY_BOOST**            | Automatically buy Energy Boost when the balance is reached (True / False)                                                                |
