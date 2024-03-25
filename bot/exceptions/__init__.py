@@ -1,0 +1,6 @@
+class InvalidSession(BaseException):
+    ...
+
+
+class TurboExpired(BaseException):
+    ...
