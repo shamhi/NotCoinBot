@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     SLEEP_BEFORE_ACTIVATE_FREE_BUFFS: list[int] = [5, 15]
     SLEEP_BEFORE_ACTIVATE_TURBO: list[int] = [5, 15]
 
-    SLEEP_AFTER_FORBIDDEN_STATUS: int = 35
+    SLEEP_AFTER_BAD_STATUS: int = 25
 
     SLEEP_TO_UPDATE_USER_DATA: int = 300
     SLEEP_BY_MIN_COINS_TIME: int = 300
